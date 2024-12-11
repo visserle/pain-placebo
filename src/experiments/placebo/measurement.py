@@ -3,29 +3,17 @@ import copy
 import logging
 import random
 import sys
-import time
 from datetime import datetime
 from pathlib import Path
 
-import numpy as np
-import pandas as pd
+import polars as pl
 from expyriment import control, design, io, stimuli
 from expyriment.misc.constants import C_DARKGREY, K_SPACE
 
-from src.experiments.measurement.imotions import (
-    EventRecievingiMotions,
-    RemoteControliMotions,
-)
+from src.experiments.measurement.database_manager import DatabaseManager
+from src.experiments.measurement.rate_limiter import RateLimiter
 from src.experiments.measurement.stimulus_generator import StimulusGenerator
 from src.experiments.measurement.visual_analogue_scale import VisualAnalogueScale
-from src.experiments.participant_data import (
-    add_participant_info,
-    read_last_participant,
-)
-from src.experiments.pop_ups import (
-    ask_for_eyetracker_calibration,
-    ask_for_measurement_start,
-)
 from src.experiments.thermoino import ThermoinoComplexTimeCourses
 from src.experiments.utils import (
     load_configuration,
@@ -37,59 +25,48 @@ from src.experiments.utils import (
 )
 from src.log_config import configure_logging
 
-# Paths
-EXP_NAME = "pain-measurement"
-EXP_DIR = Path("src/experiments/measurement")
-MEASUREMENT_RESULTS = Path("data/experiments/measurement_results.csv")
-CALIBRATION_RESULTS = Path("data/experiments/calibration_results.csv")
-LOG_FILE = Path("runs/experiments/measurement/logs") / datetime.now().strftime(
-    "%Y_%m_%d__%H_%M_%S.log"
-)
+EXP_NAME = "pain-placebo"
+EXP_DIR = Path("src/experiments/placebo")
+LOG_FILE = Path("logs/placebo") / datetime.now().strftime("%Y_%m_%d__%H_%M_%S.log")
 
 
 # Parse arguments
-parser = argparse.ArgumentParser(description="Run the pain-measurement experiment.")
+parser = argparse.ArgumentParser(description="Run the pain-placebo experiment.")
 parser.add_argument(
     "-a",
     "--all",
     action="store_true",
-    help="Use all flags",
+    help="Use all flags for a dry run.",
 )
 parser.add_argument(
     "-d",
     "--debug",
     action="store_true",
-    help="Enable debug mode using dummy participants. Results will not be saved.",
+    help="Enable debug mode.",
 )
 parser.add_argument(
     "-w",
     "--windowed",
     action="store_true",
-    help="Run in windowed mode",
+    help="Run in windowed mode.",
 )
 parser.add_argument(
     "-m",
     "--muted",
     action="store_true",
-    help="Mute the audio output.",
+    help="Mute audio output.",
 )
 parser.add_argument(
     "-ds",
     "--dummy_stimulus",
     action="store_true",
-    help="Use dummy stimulus",
+    help="Use dummy stimulus.",
 )
 parser.add_argument(
     "-dt",
     "--dummy_thermoino",
     action="store_true",
-    help="Use dummy Thermoino device",
-)
-parser.add_argument(
-    "-di",
-    "--dummy_imotions",
-    action="store_true",
-    help="Use dummy iMotions",
+    help="Use dummy Thermoino device.",
 )
 args = parser.parse_args()
 
@@ -99,16 +76,17 @@ configure_logging(
     file_path=LOG_FILE,
 )
 
-# Load configurations and script
-config = load_configuration(EXP_DIR / "measurement_config.toml")
+
+# Load scripts and configurations
 script = load_script(EXP_DIR / "measurement_script.yaml")
+config = load_configuration(EXP_DIR / "measurement_config.toml")
 thermoino_config = load_configuration(EXP_DIR.parent / "thermoino_config.toml")
+stimulus_config = load_configuration(EXP_DIR / "stimulus_config.toml")
 # Experiment settings
 design.defaults.experiment_background_colour = C_DARKGREY
 stimuli.defaults.textline_text_colour = config["experiment"]["element_color"]
 stimuli.defaults.textbox_text_colour = config["experiment"]["element_color"]
 stimuli.defaults.rectangle_colour = config["experiment"]["element_color"]
-io.defaults.outputfile_time_stamp = True
 io.defaults.mouse_show_cursor = False
 control.defaults.initialize_delay = 3
 # Adjust settings
@@ -118,34 +96,33 @@ if args.all:
         setattr(args, flag, True)
 if args.debug or args.windowed:
     control.set_develop_mode(True)
+    control.defaults.window_mode = False
 if args.debug:
-    read_last_participant = lambda *args, **kwargs: config["dummy_participant"]  # noqa: E731
-    add_participant_info = lambda *args, **kwargs: logging.debug(  # noqa: E731
-        f"Participant data: {args[0]}."
-    )
-    logging.debug(
-        "Enabled debug mode with dummy participant data. "
-        "Participant data will not be saved."
-    )
+    logging.debug("Running in debug mode.")
 if args.windowed:
-    logging.debug("Run in windowed mode.")
+    logging.debug("Running in windowed mode.")
+    control.defaults.window_mode = True
     control.defaults.window_size = (860, 600)
 if args.muted:
     logging.debug("Muting the audio output.")
 if args.dummy_stimulus:
     logging.debug("Using dummy stimulus.")
-    config["stimulus"] |= config["dummy_stimulus"]
-if args.dummy_imotions:
-    ask_for_eyetracker_calibration = (  # noqa: E731
-        lambda: logging.debug(
-            "Skip asking for eye-tracker calibration because of dummy iMotions."
-        )
-        or True  # hack to return True
-    )
-    ask_for_measurement_start = lambda: logging.debug(  # noqa: E731
-        "Skip asking for measurement start because of dummy iMotions."
-    )
+    stimulus_config |= config["dummy_stimulus"]
+else:
+    stimulus_config.pop("dummy", None)
 
+
+# Connect to database
+db_manager = DatabaseManager()
+db_rate_limiter = RateLimiter(rate=config["database"]["rate_limit"], use_intervals=True)
+participant_key, participant_id = db_manager.add_participant()
+
+# Save stimulus config to database and shuffle it
+db_manager.add_stimuli(participant_key, stimulus_config)
+stimulus_config = {
+    k: stimulus_config[k]
+    for k in random.sample(list(stimulus_config.keys()), len(stimulus_config))
+}
 
 # Load participant info and update stimulus config with calibration data
 participant_info = read_last_participant(CALIBRATION_RESULTS)
@@ -197,33 +174,18 @@ config["stimulus"] |= participant_info
 # shuffle seeds for randomization
 random.shuffle(config["stimulus"]["seeds"])
 
-# Initialize iMotions
-imotions_control = RemoteControliMotions(
-    study=EXP_NAME, participant_info=participant_info, dummy=args.dummy_imotions
-)
-imotions_control.connect()
-imotions_event = EventRecievingiMotions(
-    sample_rate=config["imotions"]["sample_rate"], dummy=args.dummy_imotions
-)
-imotions_event.connect()
-if not ask_for_eyetracker_calibration():
-    raise SystemExit("Eye-tracker calibration denied.")
-imotions_control.start_study(mode=config["imotions"]["start_study_mode"])
-ask_for_measurement_start()
-time.sleep(1)
-
 # Experiment setup
-exp = design.Experiment(name=EXP_NAME)
+exp = design.Experiment(name="cornsweet_illusion")
 exp.set_log_level(0)
 control.initialize(exp)
 screen_size = exp.screen.size
-audio = copy.deepcopy(script)  # audio needs the keys from the script
+audio = copy.deepcopy(script)  # audio shares the same keys
+prepare_audio(audio, audio_dir=EXP_DIR / "audio")
 prepare_script(
     script,
     text_box_size=scale_2d_tuple(config["experiment"]["text_box_size"], screen_size),
     text_size=scale_1d_value(config["experiment"]["text_size"], screen_size),
 )
-prepare_audio(audio, EXP_DIR / "audio")
 vas_slider = VisualAnalogueScale(experiment=exp, config=config["visual_analogue_scale"])
 
 
@@ -236,25 +198,30 @@ thermoino = ThermoinoComplexTimeCourses(
 thermoino.connect()
 
 
-def get_data_points(stimulus: StimulusGenerator) -> None:
+def get_data_points(
+    trial_id: int,
+    stimulus: StimulusGenerator,
+) -> None:
     """
-    Get rating and temperature data points and send them to iMotions (run in callback).
+    Get rating and temperature data points and send them to the db (runs rate-limited in
+    the callback).
     """
     vas_slider.rate()  # slider has its own rate limiters (see VisualAnalogueScale)
     stopped_time = exp.clock.stopwatch_time
-    index = int((stopped_time / 1000) * config["stimulus"]["sample_rate"])
-    index = min(index, len(stimulus.y) - 1)  # prevent index out of bounds
-    imotions_event.send_data_rate_limited(
-        timestamp=stopped_time,
-        temperature=stimulus.y[index],
-        rating=vas_slider.rating,
-        debug=args.dummy_imotions,
-    )
+    if db_rate_limiter.is_allowed(stopped_time):
+        index = int((stopped_time / 1000) * stimulus.sample_rate)
+        index = min(index, len(stimulus.temperature) - 1)  # prevent index out of bounds
+        db_manager.add_data_point(
+            trial_id=trial_id,
+            time=stopped_time,
+            temperature=stimulus.temperature[index],
+            rating=vas_slider.rating,
+        )
 
 
 def main():
     # Start experiment
-    control.start(skip_ready_screen=True, subject_id=participant_info["id"])
+    control.start(skip_ready_screen=True, subject_id=participant_id)
     logging.info(f"Started measurement with seed order {config['stimulus']['seeds']}.")
 
     # Introduction
@@ -278,42 +245,46 @@ def main():
         exp.keyboard.wait(K_SPACE)
 
     # Trial loop
-    total_trials = len(config["stimulus"]["seeds"])
+    total_trials = len(stimulus_config.keys())
     correlations = []  # between temperature and rating
     reward = 0.0
-    for trial, seed in enumerate(config["stimulus"]["seeds"]):
-        logging.info(f"Started trial ({trial + 1}/{total_trials}) with seed {seed}.")
+    for trial, (name, config) in enumerate(stimulus_config.items()):
+        logging.info(
+            f"Started trial ({trial + 1}/{total_trials}) with stimulus {name}."
+        )
+        trial_id = db_manager.add_trial(participant_key, trial + 1, name)
 
         # Start with a waiting screen for the initalization of the complex time course
         script["wait"].present()
-        stimulus = StimulusGenerator(config=config["stimulus"], seed=seed)
+        stimulus = StimulusGenerator(config)
         thermoino.flush_ctc()
         thermoino.init_ctc(bin_size_ms=thermoino_config["bin_size_ms"])
         thermoino.create_ctc(
-            temp_course=stimulus.y, sample_rate=config["stimulus"]["sample_rate"]
+            temp_course=stimulus.temperature, sample_rate=stimulus.sample_rate
         )
         thermoino.load_ctc()
         thermoino.trigger()
 
         # Present the VAS slider and wait for the temperature to ramp up
         time_to_ramp_up = thermoino.prep_ctc()
-        imotions_event.send_prep_markers()
+        # add marker for preparation here
         exp.clock.wait_seconds(
             time_to_ramp_up + 1.5,  # give participant time to prepare
-            callback_function=lambda: vas_slider.rate(),
+            callback_function=lambda: vas_slider.rate(),  # lamdba needed for callback
         )
 
         # Measure temperature and rating
         thermoino.exec_ctc()
-        imotions_event.rate_limiter.reset()
+        db_rate_limiter.reset()
         exp.clock.reset_stopwatch()  # needed for the callback
-        imotions_event.send_stimulus_markers(seed)
+        # add marker for stimulus start here
+        logging.info("Stimulus started.")
         exp.clock.wait_seconds(
             stimulus.duration,
-            callback_function=lambda: get_data_points(stimulus),
+            callback_function=lambda: get_data_points(trial_id, stimulus),
         )
-        imotions_event.send_stimulus_markers(seed)
-        logging.info("Complex temperature course (CTC) finished.")
+        # add marker for stimulus end here
+        logging.info("Stimulus ended.")
 
         # Add delay at the end of the complex time course (see thermoino.py)
         exp.clock.wait_seconds(1, callback_function=lambda: vas_slider.rate())
@@ -323,37 +294,21 @@ def main():
         exp.clock.wait_seconds(
             time_to_ramp_down, callback_function=lambda: vas_slider.rate()
         )
-        imotions_event.send_prep_markers()
-        logging.info(f"Finished trial ({trial + 1}/{total_trials}) with seed {seed}.")
-
-        # Log and reward participant
-        data_points = pd.DataFrame(imotions_event.data_points)
-        data_points.set_index("timestamp", inplace=True)
-        correlation = np.round(data_points.corr()["temperature"]["rating"], 2).item()
-        correlations.append(correlation)
+        # add marker for ramp down here
         logging.info(
-            f"VAS ratings: "
-            f"min = {int(data_points['rating'].min())}, "
-            f"max = {int(data_points['rating'].max())}, "
-            f"mean = {int(data_points['rating'].mean())}, "
-            f"std = {int(data_points['rating'].std())}."
+            f"Finished trial ({trial + 1}/{total_trials}) with stimulus {name}."
         )
-        # warning if pain rating is not covering the full spectrum
-        if not (
-            (data_points["rating"]).min() == 0 and data_points["rating"].max() == 100
-        ):
-            logging.warning("Pain rating is not covering the full spectrum. ")
-        logging.info(f"Correlation between temperature and rating: {correlation}")
-        if correlation > 0.7:
-            reward += 0.5
-            logging.info("Rewarding participant.")
-            script["reward"].present()
-            exp.clock.wait_seconds(2.5)
-        elif correlation < 0.3 or np.isnan(correlation):
-            logging.error(
-                "Correlation is too low. Is the participant paying attention?"
-            )
-        imotions_event.clear_data_points()
+
+        # Log data
+        query = f"SELECT * FROM DataPoints WHERE trial_id = {trial_id};"
+        df = pl.read_database(query, db_manager.conn)
+        logging.info(
+            f"Rating of the stimulus: "
+            f"min = {int(df['rating'].min())}, "
+            f"max = {int(df['rating'].max())}, "
+            f"mean = {int(df['rating'].mean())}, "
+            f"std = {int(df['rating'].std())}."
+        )
 
         # Next trial
         if trial == total_trials - 1:
@@ -378,14 +333,13 @@ def main():
     # End of Experiment
     script["bye"].present()
     audio["bye"].play(maxtime=args.muted)
-    exp.clock.wait_seconds(7)
+    exp.clock.wait_seconds(3)
 
     control.end()
-    imotions_control.end_study()
-    for instance in [thermoino, imotions_event, imotions_control]:
+    # add marker for experiment end here
+    for instance in [thermoino]:
         instance.close()
     logging.info("Measurement successfully finished.")
-    logging.info(f"Participant reward: {reward} €.")
     sys.exit(0)
 
 
