@@ -1,0 +1,47 @@
+title: "PHQ-15"
+name: Patient Health Questionnaire 15, deutsche Version
+url: https://register.awmf.org/assets/guidelines/015_D_Ges_fuer_Gynaekologie_und_Geburtshilfe/015-045f_04_Endometriose_Fragebogen_PHQ-15.pdf
+layout: single_statement
+instructions: |
+  Wie stark fühlten Sie sich im Verlauf der
+  **letzten 4 Wochen** durch die folgenden
+  Beschwerden beeinträchtigt?
+options:
+  - score: 0
+    text: "Nicht beeinträchtigt"
+  - score: 1
+    text: "Wenig beeinträchtigt"
+  - score: 2
+    text: "Stark beeinträchtigt"
+questions:
+  - id: 1
+    text: "Bauchschmerzen"
+  - id: 2
+    text: "Rückenschmerzen"
+  - id: 3
+    text: "Schmerzen in den Armen, Beinen oder Gelenken (Knie, Hüften usw.)"
+  - id: 4
+    text: "Menstruationsschmerzen oder andere Probleme bei der Menstruation"
+  - id: 5
+    text: "Schmerzen oder Probleme beim Geschlechtsverkehr"
+  - id: 6
+    text: "Kopfschmerzen"
+  - id: 7
+    text: "Schmerzen im Brustbereich"
+  - id: 8
+    text: "Schwindel"
+  - id: 9
+    text: "Ohnmachtsanfälle"
+  - id: 10
+    text: "Herzklopfen oder Herzrasen"
+  - id: 11
+    text: "Kurzatmigkeit"
+  - id: 12
+    text: "Verstopfung, nervöser Darm oder Durchfall"
+  - id: 13
+    text: "Übelkeit, Blähungen oder Verdauungsbeschwerden"
+  - id: 14
+    text: "Schwierigkeiten, ein- oder durchzuschlafen, oder vermehrter Schlaf"
+  - id: 15
+    text: "Müdigkeit oder das Gefühl, keine Energie mehr zu haben"
+    

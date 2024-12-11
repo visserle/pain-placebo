@@ -1,0 +1,58 @@
+[experiment]
+text_size = 40
+text_box_size = [1500, 900]
+element_color = [255, 162, 0]
+marker_color = [255, 0, 0]
+
+[visual_analogue_scale]
+sample_rate = 100
+bar_length = 800
+bar_thickness = 20
+bar_position = [0, 0]
+slider_width = 10
+slider_height = 60
+slider_color = [194, 24, 7]
+label_text_size = 40
+label_text_box_size = [250, 100]
+
+[imotions]
+sample_rate = 10
+start_study_mode = "NormalPrompt"
+
+[stimulus]
+seeds = [133, 243, 265, 396, 467, 658, 681, 743, 806, 841, 870, 952]
+sample_rate = 10
+half_cycle_num = 10
+period_range = [5, 20]
+amplitude_range = [0.3, 1.0]
+inflection_point_range = [-0.4, 0.3]
+shorten_expected_duration = 2
+major_decreasing_half_cycle_num = 3
+major_decreasing_half_cycle_period = 20
+major_decreasing_half_cycle_amplitude = 0.925
+major_decreasing_half_cycle_min_y_intercept = 0.9
+plateau_num = 2
+plateau_duration = 15
+plateau_percentile_range = [25, 50]
+prolonged_minima_num = 1
+prolonged_minima_duration = 5
+
+[dummy_stimulus]
+seeds = [1, 2, 3]
+half_cycle_num = 2
+period_range = [2, 2]
+major_decreasing_half_cycle_num = 0
+shorten_expected_duration = 0
+amplitude_range = [0.9, 1.0]
+plateau_num = 0
+prolonged_minima_num = 0
+
+[dummy_participant]
+timestamp = "2024-01-01 15:00:00"
+id = 0
+age = 20
+gender = "Female"
+temperature_baseline = 47
+temperature_range = 1.5
+vas0 = 42
+vas70 = 46

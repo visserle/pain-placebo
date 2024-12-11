@@ -1,0 +1,90 @@
+# TODO add another category for thermode shutdown? also we'd need to seperate between invalid trials and invalid participants
+#
+# note that eeg data still has to be processed
+# participant 14 might have an invalid eeg
+# which is not protocolled here yet
+
+participant_id,trial_number,modality/ies,comment
+1,1,stimulus/eda, didn't get the task for the first minute
+1,2,eda, no eda reaction for the whole experiment
+1,3,eda,
+1,4,stimulus/eda, forgot to rate
+1,5,eda,
+1,6,eda,
+1,7,eeg/eda, first P4 orange later all electrods
+1,8,eda,
+1,9,eda,
+1,10,eda,
+1,11,eda
+1,12,eda,
+2,1,eda, hyperhidrosis sensors did not adhere
+2,2,eda,
+2,3,eda,
+2,4,eda,
+2,5,eda,
+2,6,eda,
+2,7,eda,
+2,8,eda,
+2,9,eda,
+2,10,eda,
+2,11,eda,
+2,12,eda,
+4,1,eda, movement artifacts
+4,5,eeg, red in between
+4,6,stimulus, thermode shut off
+4,7,stimulus, again and experiment aborted after this trial
+4,8,stimulus, experiment aborted
+4,9,stimulus, experiment aborted
+4,10,stimulus, experiment aborted
+4,11,stimulus, experiment aborted
+4,12,stimulus, experiment aborted
+5,1,stimulus, participant too tired to do the experiment
+5,2,stimulus
+5,3,stimulus
+5,4,stimulus
+5,5,stimulus
+5,6,stimulus
+5,7,stimulus
+5,8,stimulus
+5,9,stimulus
+5,10,stimulus
+5,11,stimulus
+5,12,stimulus
+7,4,stimulus, not as painful perceived as it should have been
+8,5,eeg, f3/f4 red
+8,6,eeg, f3/f4 red
+8,7,eeg, f3/f4/c3/cz red
+8,8,eeg, all red
+8,9,eeg, all red
+8,10,eeg, all red
+8,11,eeg, all red
+8,12,eeg, all red
+9,1,stimulus, forgot to rate
+15,1,stimulus, participant was not attentive
+15,2,stimulus, 
+15,3,stimulus,    
+15,4,stimulus,
+15,5,stimulus,
+15,6,stimulus,
+15,7,stimulus,
+15,8,stimulus,
+15,9,stimulus,
+15,10,stimulus,
+15,11,stimulus,
+15,12,stimulus,
+18,11,stiumlus, participant was distracted
+22,1,eda, hyperhidrosis palmaris plus a bit inattentive
+22,2,eda,
+22,3,eda,
+22,4,eda,
+22,5,eda,
+22,6,eda,
+22,7,eda,
+22,8,eda,
+22,9,eda,
+22,10,eda,
+22,11,eda,
+22,12,eda,
+45,10,stimulus but we have to check again here very important
+45,11,stimulus check
+45,12,stimulus ehck

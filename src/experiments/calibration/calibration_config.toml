@@ -1,0 +1,34 @@
+[experiment]
+text_size = 40
+text_box_size = [1500, 900]
+element_color = [255, 162, 0]
+cross_pain_color = [255, 0, 0]
+cross_size = [100, 100]
+cross_line_width = 20
+
+[stimulus]
+stimulus_duration = 9  # duration of the plateau
+# Note that plateaus of 10 s over 49 °C lead to automatic shutdown of thermode
+iti_duration = 12
+warmup_temperatures = [39.0, 40.0]
+preexposure_temperatures = [42.0, 43.0, 44.5]
+preexposure_correction = 1.5  # we add this to the vas0 prediction if preexposure was not painful
+
+[estimator]
+# VAS 0
+trials_vas0 = 6
+temp_start_vas0 = 43.0
+temp_std_vas0 = 1.75
+likelihood_std_vas0 = 0.75
+
+# VAS 70
+trials_vas70 = 6
+temp_start_vas70 = inf # will be set after VAS 0 estimate
+temp_start_vas70_offset = 2.5  # vas70 = vas0 + offset
+temp_std_vas70 = 0.65
+likelihood_std_vas70 = 0.7
+
+[dummy_participant]
+id = 0
+age = 20
+gender = "Female"

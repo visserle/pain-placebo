@@ -1,0 +1,1 @@
+Note that some operations are datatype-specific, e. g. floats are exclusively used for time series data.

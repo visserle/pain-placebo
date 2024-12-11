@@ -1,0 +1,46 @@
+title: "FMI-14"
+name: "Freiburger Mindfulness Inventory"
+layout: single_statement
+instructions: "Dieser Fragebogen soll Ihre Achtsamkeit erfassen. Bitte beziehen Sie dabei die Aussagen auf die letzten
+10 Tage. Kreuzen Sie bitte bei jeder Frage die Antwort an, die am besten auf Sie zutrifft.
+Wir möchten Sie bitten, so ehrlich und spontan wie möglich zu antworten. Es gibt keine „richtigen“ oder
+„falschen“ und keine „guten“ oder „schlechten“ Antworten. Ihre persönlichen Erfahrungen sind uns
+wichtig."
+options:
+  - score: 1
+    text: "fast nie"
+  - score: 2
+    text: "eher selten"
+  - score: 3
+    text: "relativ oft"
+  - score: 4
+    text: "fast immer"
+questions:
+  - id: 1
+    text: "Ich bin offen für die Erfahrung des Augenblicks."
+  - id: 2
+    text: "Ich spüre in meinen Körper hinein, sei es beim Essen, Kochen, Putzen, Reden."
+  - id: 3
+    text: "Wenn ich merke, dass ich abwesend war, kehre ich sanft zur Erfahrung des Augenblicks zurück."
+  - id: 4
+    text: "Ich kann mich selbst wertschätzen."
+  - id: 5
+    text: "Ich achte auf die Motive meiner Handlungen."
+  - id: 6
+    text: "Ich sehe meine Fehler und Schwierigkeiten, ohne mich zu verurteilen."
+  - id: 7
+    text: "Ich bin in Kontakt mit meinen Erfahrungen, hier und jetzt."
+  - id: 8
+    text: "Ich nehme unangenehme Erfahrungen an."
+  - id: 9
+    text: "Ich bin mir selbst gegenüber freundlich, wenn Dinge schief laufen."
+  - id: 10
+    text: "Ich beobachte meine Gefühle, ohne mich in ihnen zu verlieren."
+  - id: 11
+    text: "In schwierigen Situationen kann ich innehalten."
+  - id: 12
+    text: "Ich erlebe Momente innerer Ruhe und Gelassenheit, selbst wenn äußerlich Schmerzen und Unruhe da sind."
+  - id: 13
+    text: "Ich bin ungeduldig mit mir und meinen Mitmenschen."
+  - id: 14
+    text: "Ich kann darüber lächeln, wenn ich sehe, wie ich mir manchmal das Leben schwer mache."

@@ -1,0 +1,229 @@
+welcome:
+  1: |-
+    
+    
+
+
+
+
+
+
+    Willkommen zum Haupt-Experiment!
+
+
+    (Leertaste drücken, um fortzufahren)
+  2: |-
+
+
+
+
+
+
+
+    Mit diesem Experiment möchten wir fluktuierende Schmerzen objektiv messbar machen.
+
+    Während Sie Schmerzen empfinden, nehmen unsere Sensoren Ihre Körperreaktionen auf. Diese Daten helfen uns, Schmerzen besser zu verstehen und zu behandeln.
+
+
+    (Leertaste drücken, um fortzufahren)
+  3: |-
+
+
+
+
+
+    Im Experiment stimulieren wir Ihren Arm fortlaufend mit kaum bis sehr schmerzhaften Temperaturen.
+
+    Ihre Aufgabe wird es sein, Ihren erlebten Schmerz durchgehend - also ohne Unterbrechung - zu bewerten. Die Schmerzintensität variiert dabei zufällig, sodass Sie die nächste Intensität nicht vorhersehen können.
+
+
+    (Leertaste drücken, um fortzufahren)
+  4: |-
+
+
+
+
+
+
+    Insgesamt besteht das Experiment aus 12 Blöcken, die jeweils 3 Minuten lang sind.
+
+    Falls Ihre Schmerzbewertung in einem Block präzise genug war, erhalten Sie eine Belohnung von 50 Cent. So können Sie sich zusätzlich zur Aufwandsentschädigung eine Belohnung von bis zu 6 € verdienen.
+
+
+    (Leertaste drücken, um fortzufahren)
+  5: |-
+
+
+
+
+
+
+
+
+    Es ist wichtig, dass Sie Ihre Schmerzbewertung so genau wie nur möglich mitteilen.
+
+    Die Bewertung erfolgt über eine Skala, die Sie auf der nächsten Seite sehen.
+    
+
+    (Leertaste drücken, um fortzufahren)
+instruction:
+  1: |-
+
+
+
+    Mit Hilfe des Schiebereglers geben Sie die von Ihnen erlebte Schmerzstärke an.
+    Bewegen Sie dazu Ihren Mauszeiger auf der Skala hin und her.
+    Probieren Sie es jetzt aus!
+
+
+
+
+
+
+
+
+
+
+
+    (Leertaste drücken, um fortzufahren)
+  2: |-
+
+
+
+
+    Ganz links bedeutet "keine Schmerzen" und ganz rechts "Sehr starke Schmerzen".
+    ("Sehr starke Schmerzen" entsprechen der 7 von 10 aus der Schmerz-Kalibrierung.)
+
+
+
+
+
+
+
+
+
+
+
+    (Leertaste drücken, um fortzufahren)
+  3: |-
+
+
+
+
+    Während des Experiments haben Sie die Aufgabe, Ihren Schmerz mittels der Skala innerhalb eines Blocks durchgehend zu bewerten. Dies geschieht ausschließlich über Bewegungen, ohne dass Sie eine Maustaste drücken müssen.
+
+
+
+
+
+
+
+
+
+
+    (Leertaste drücken, um fortzufahren)
+ready:
+  1: |-
+
+
+
+
+
+
+
+
+    Wir möchten Sie bitten, bei Ihrer Schmerzbewertung nicht zu sprechen, nicht zu trinken, die Maus ständig in der Hand zu halten, auf den Monitor zu schauen und Ihre Augen immer geöffnet zu halten (Blinzeln ist erlaubt).
+
+
+    (Leertaste drücken, um fortzufahren)
+  2: |-
+
+
+
+
+
+
+
+
+    Nach jedem Block wechselt die Versuchsleitung die Hautstelle am Arm. Dabei können Sie sich entspannen. Bitte warten Sie mit dem Start des jeweils nächsten Blocks, bis die Versuchsleitung wieder Platz genommen hat.
+
+
+    (Leertaste drücken, um fortzufahren)
+  3: |-
+
+
+
+
+
+
+
+    Sollten Sie noch Fragen haben, richten Sie sich bitte jetzt an die Versuchsleitung.
+    
+    Als Nächstes startet das Experiment mit dem ersten Block. Bitte fangen Sie sogleich an, Ihre Schmerzempfindung zu bewerten.
+    
+    
+    (Leertaste drücken, um fortzufahren)
+next_trial: |-
+
+
+
+
+
+
+
+    Dieser Block ist geschafft.
+    
+    Nun wechseln wir die Hautstelle am Arm.
+        
+    
+    (Leertaste drücken, um fortzufahren)
+wait: |-
+
+
+
+
+
+
+
+
+
+
+  ...
+reward: |-
+
+
+
+
+
+
+
+
+
+
+  Sie erhalten eine Belohnung.
+approve : |-
+
+
+
+
+
+
+
+
+
+  Sind Sie bereit für den nächsten Block?
+
+
+  (Leertaste drücken, um fortzufahren)
+bye: |-
+  
+
+
+
+
+
+
+
+  Vielen Dank! Die Schmerz-Messung ist erfolgreich abgeschlossen.
+
+  Als Nächstes geht es mit den Fragebögen weiter.

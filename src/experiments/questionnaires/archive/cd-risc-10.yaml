@@ -1,0 +1,37 @@
+title: "CD-RISC-10"
+name: "Connor-Davidson Resilience Scale 10"
+url: "https://www.connordavidson-resiliencescale.com/about.php, https://econtent.hogrefe.com/cms/10.1026/0943-8149/a000142/asset/images/medium/0943-8149_a000142_tbl1a.gif"
+layout: single_statement
+instructions: "Bitte geben Sie an, inwieweit Ihre Meinung mit den folgenden Aussagen übereinstimmt."  # eigene Instruktion
+options:  # eigene Übersetzung
+  - score: 0
+    text: trifft überhaupt nicht zu
+  - score: 1
+    text: trifft kaum zu
+  - score: 2
+    text: teils/teils
+  - score: 3
+    text: trifft etwas zu
+  - score: 4
+    text: trifft ausgesprochen zu
+questions:
+  - id: 1
+    text: "Ich bin fähig mich anzupassen, wenn sich etwas verändert."
+  - id: 2
+    text: "Ich komme mit allem klar, was sich mir in den Weg stellt."
+  - id: 3
+    text: "Wenn ich mit Problemen konfrontiert bin, versuche ich dies mit Humor zu sehen."
+  - id: 4
+    text: "Der Umgang mit Stress kann mich stärken."
+  - id: 5
+    text: "Ich neige dazu, mich nach Krankheit, Verletzungen oder anderen Missgeschicken wieder gut zu erholen."
+  - id: 6
+    text: "Auch wenn es Hindernisse gibt, bin ich der Meinung meine Ziele erreichen zu können."
+  - id: 7
+    text: "Wenn ich unter Druck stehe, bleibe ich fokussiert und denke klar."
+  - id: 8
+    text: "Wenn ich versage, lasse ich mich nicht leicht entmutigen."
+  - id: 9
+    text: "Wenn es um den Umgang mit Herausforderungen des Lebens und allgemeine Schwierigkeiten geht, schätze ich mich als starke Person ein."
+  - id: 10
+    text: "Ich bin fähig, mit unerfreulichen oder schmerzhaften Gefühlen wie Traurigkeit, Angst und Wut umzugehen."
