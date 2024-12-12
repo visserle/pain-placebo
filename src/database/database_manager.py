@@ -48,17 +48,18 @@ class DatabaseManager:
         self.cursor.execute(
             """
             SELECT participant_key FROM Participants
-            ORDER BY participant_key DESC LIMIT 1;
+            ORDER BY ROWID DESC LIMIT 1;  -- ROWID is a built-in column
             """
         )
-        return self.cursor.fetchone()[0]
+        result = self.cursor.fetchone()
+        return result[0] if result else None
 
     @property
     def last_participant_id(self) -> int:
         self.cursor.execute(
             """
             SELECT participant_id FROM Participants
-            ORDER BY participant_id DESC LIMIT 1;
+            ORDER BY ROWID DESC LIMIT 1;
             """
         )
         result = self.cursor.fetchone()
