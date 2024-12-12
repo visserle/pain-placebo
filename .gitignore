@@ -100,3 +100,4 @@ target/
 
 # Mypy cache
 .mypy_cache/
+.DS_Store
