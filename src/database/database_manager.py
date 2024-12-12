@@ -2,8 +2,8 @@ import logging
 import sqlite3
 from pathlib import Path
 
-from src.data.data_config import DataConfig
-from src.data.database_schema import DatabaseSchema
+from src.database.data_config import DataConfig
+from src.database.database_schema import DatabaseSchema
 from src.experiments.placebo.stimulus_generator import StimulusGenerator
 
 logger = logging.getLogger(__name__.rsplit(".", maxsplit=1)[-1])
@@ -16,6 +16,16 @@ class DatabaseManager:
         self.conn = None
         self.cursor = None
         self.connect()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.disconnect()
+        if exc_type:
+            logger.error(f"Exception occurred: {exc_type}: {exc_value}")
+            return False  # re-raise the exception
+        return True
 
     def connect(self) -> None:
         """Establishes a connection to the SQLite database."""
