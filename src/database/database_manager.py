@@ -65,6 +65,24 @@ class DatabaseManager:
         result = self.cursor.fetchone()
         return result[0] if result else None
 
+    def insert_participant(
+        self,
+        participant_data: dict,
+    ):
+        self.cursor.execute(
+            """
+            INSERT INTO Participants (participant_id, comment, age, gender)
+            VALUES (?, ?, ?, ?);
+            """,
+            (
+                participant_data["id"],
+                participant_data["comment"],
+                participant_data["age"],
+                participant_data["gender"],
+            ),
+        )
+        return self.cursor.lastrowid
+
     def add_stimuli(
         self,
         participant_key: int,
@@ -132,7 +150,7 @@ class DatabaseManager:
         result = self.cursor.fetchone()
         return result[0] if result else None
 
-    def add_data_point(
+    def insert_data_point(
         self,
         trial_id: int,
         time: float,

@@ -1,3 +1,6 @@
+# Differs from the original (pain-measurement) in the following ways:
+# - The resulting temperature curve is normalized to [-1, 1] for smooth maximum values
+
 import numpy as np
 import scipy
 
@@ -50,17 +53,10 @@ class StimulusGenerator:
     Note that the term `period` refers to only 1 pi in this class.
     """
 
-    # NOTE: There is one small detail I missed that would have made the analysis
-    # slightly easier: The resulting curve should have been normalized to [-1, 1] for
-    # smooth maximum values as determined by the calibration. However, the resulting
-    # difference is negligible (for a max value of 47.75 °C, the mean of the resulting max
-    # values over all seeds is 47.74 °C). There is no difference in the mean of the min
-    # values.
-
     def __init__(
         self,
         config: dict | None = None,
-        seed: int = None,
+        seed: int | None = None,
         debug: bool = False,
     ):
         # Initialize parameters
@@ -206,7 +202,10 @@ class StimulusGenerator:
             t_start = t[-1]
             yi.append(y)
 
-        self.y = np.concatenate(yi)
+        y = np.concatenate(yi)
+        # Normalize to [-1, 1]
+        y = (y - np.min(y)) / (np.max(y) - np.min(y)) * 2 - 1
+        self.y = y
 
     def _get_periods(self) -> np.ndarray:
         """
@@ -315,6 +314,7 @@ class StimulusGenerator:
 
         if self.debug:
             print(f"Amplitudes: {counter} iterations to converge")
+
         return amplitudes
 
     def add_calibration(self):
