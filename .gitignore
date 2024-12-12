@@ -93,6 +93,10 @@ target/
 
 # Mac OS-specific storage files
 .DS_Store
+.DS_Store
+._.DS_Store
+**/.DS_Store
+**/._.DS_Store
 
 # vim
 *.swp
@@ -100,4 +104,4 @@ target/
 
 # Mypy cache
 .mypy_cache/
-.DS_Store
+
