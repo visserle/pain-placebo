@@ -1,0 +1,16 @@
+[tool.ruff]
+line-length = 88
+extend-select = ["I"]
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.ruff.lint]
+select = ["E", "F"]
+unfixable = ["F401"]  # do not remove unused imports
+
+[tool.ruff.lint.pydocstyle]
+convention = "pep257"
+
+[tool.pytest.ini_options]
+pythonpath = [".", "src"]
