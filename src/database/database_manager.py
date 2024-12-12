@@ -64,46 +64,6 @@ class DatabaseManager:
         result = self.cursor.fetchone()
         return result[0] if result else None
 
-    def add_participant(self) -> tuple[int, int]:
-        """
-        Add a participant to the database.
-
-        Returns both the participant key and the participant ID.
-        """
-        logging.debug(f"Last participant id: {self.last_participant_id}")
-        participant_id = input("Enter new participant id: ")
-        participant_id = int(participant_id) if participant_id else 0
-        dummy = " (dummy)" if participant_id == 0 else ""
-        # Ask for age and gender if the participant is not a dummy
-        if not dummy:
-            age = input("Enter age: ")
-            while not age.isdigit():
-                logger.error("Age must be an integer.")
-                age = input("Enter age: ")
-            gender = input("Enter gender (f/m): ")
-            while gender not in ["f", "m"]:
-                logger.error("Gender must be 'f' or 'm'.")
-                gender = input("Enter gender (f/m): ")
-        else:
-            age, gender = 20, "f"
-
-        comment = input("Enter comment (optional): ")
-        if comment:
-            logger.info(f"Comment: {comment}")
-
-        self.cursor.execute(
-            """
-            INSERT INTO Participants (participant_id, comment, age, gender)
-            VALUES (?, ?, ?, ?);
-            """,
-            (participant_id, comment, age, gender),
-        )
-        logger.info(f"Participant {participant_id}{dummy} added to the database.")
-        logger.debug(f"Age: {age}")
-        logger.debug(f"Gender: {gender}")
-
-        return self.cursor.lastrowid, participant_id
-
     def add_stimuli(
         self,
         participant_key: int,
