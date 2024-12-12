@@ -2,6 +2,8 @@ import logging
 import sqlite3
 from pathlib import Path
 
+import polars as pl
+
 from src.database.data_config import DataConfig
 from src.database.database_schema import DatabaseSchema
 from src.experiments.placebo.stimulus_generator import StimulusGenerator
@@ -43,6 +45,15 @@ class DatabaseManager:
             self.conn = None
             self.cursor = None
 
+    def get_table(
+        self,
+        table_name: str,
+    ) -> pl.DataFrame:
+        """Returns the table as a polars DataFrame."""
+        self.cursor.execute(f"SELECT * FROM {table_name};")
+        data = self.cursor.fetchall()
+        return pl.DataFrame(data)
+
     @property
     def last_participant_key(self) -> int:
         self.cursor.execute(
@@ -69,6 +80,18 @@ class DatabaseManager:
         self,
         participant_data: dict,
     ):
+        # Check if participant already exists
+        if not participant_data["id"] == 0:  # Dummy participant
+            result = self.conn.execute(f"""
+                SELECT COUNT(participant_id) FROM Participants
+                WHERE participant_id = {participant_data["id"]};
+            """).fetchone()[0]
+            if result:
+                logger.warning(
+                    f"Participant with ID {participant_data['id']} already exists."
+                )
+
+        # Insert participant
         self.cursor.execute(
             """
             INSERT INTO Participants (participant_id, comment, age, gender)
@@ -82,6 +105,14 @@ class DatabaseManager:
             ),
         )
         return self.cursor.lastrowid
+
+    def insert_calibration_results(
+        self,
+        participant_key: int,
+        vas_0: float,
+        vas_70: float,
+    ) -> None:
+        pass
 
     def add_stimuli(
         self,
@@ -160,7 +191,7 @@ class DatabaseManager:
     ) -> None:
         self.cursor.execute(
             """
-            INSERT INTO DataPoints (trial_id, time, temperature, rating)
+            INSERT INTO Data_Points (trial_id, time, temperature, rating)
             VALUES (?, ?, ?, ?);
             """,
             (trial_id, time, temperature, rating),
@@ -169,6 +200,9 @@ class DatabaseManager:
             logger.debug(
                 f"Data point added to the database: {time=}, {temperature=}, {rating=}"
             )
+
+    def remove_dummy_data(self) -> None:
+        pass
 
     def delete_database(self) -> None:
         input_ = input(f"Delete database {DB_FILE}? (y/n) ")
