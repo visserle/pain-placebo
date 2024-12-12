@@ -70,6 +70,7 @@ class DatabaseManager:
             DatabaseSchema.create_seeds_table(conn)
 
     def connect(self) -> None:
+        # note that DuckDB has no cursor, so we only need to connect
         if not self.conn:
             self.conn = duckdb.connect(DB_FILE.as_posix())
 

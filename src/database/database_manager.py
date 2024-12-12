@@ -19,9 +19,12 @@ class DatabaseManager:
 
     def connect(self) -> None:
         """Establishes a connection to the SQLite database."""
-        self.conn = sqlite3.connect(DB_FILE, isolation_level=None)  # autocommit
+        self.conn = sqlite3.connect(
+            DB_FILE,
+            isolation_level=None,  # autocommit
+        )
         self.cursor = self.conn.cursor()
-        DatabaseSchema.create_tables(self.cursor)
+        DatabaseSchema.initialize_tables(self.cursor)
 
     def disconnect(self) -> None:
         """Closes the connection to the SQLite database."""

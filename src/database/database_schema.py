@@ -1,14 +1,9 @@
-import logging
 import sqlite3
-
-import polars as pl
-
-logger = logging.getLogger(__name__.rsplit(".", maxsplit=1)[-1])
 
 
 class DatabaseSchema:
     @staticmethod
-    def create_tables(cursor):
+    def initialize_tables(cursor: sqlite3.Cursor) -> None:
         cursor.execute("""CREATE TABLE IF NOT EXISTS Participants (
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
             participant_key INTEGER PRIMARY KEY AUTOINCREMENT,
