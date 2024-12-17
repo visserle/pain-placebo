@@ -36,6 +36,7 @@ def add_participant() -> int:
 def _get_valid_age() -> int:
     """Get and validate participant age."""
     age = input("Enter age: ")
+
     while not age.isdigit():
         logger.error("Age must be an integer.")
         age = input("Enter age: ")
