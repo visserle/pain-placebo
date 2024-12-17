@@ -1,6 +1,6 @@
 TODO
 
-- read on interaction: https://github.com/eigenfoo/tests-as-linear
+- interaction: https://github.com/eigenfoo/tests-as-linear
 - also https://danielroelfs.com/blog/everything-is-a-linear-model/
 
 Ideas:
