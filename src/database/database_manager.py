@@ -1,3 +1,5 @@
+# TODO: change add methods into insert methods
+
 import logging
 import sqlite3
 from pathlib import Path
@@ -48,11 +50,12 @@ class DatabaseManager:
     def get_table(
         self,
         table_name: str,
+        exclude_invalid_data: bool = True,  # TODO: implement
     ) -> pl.DataFrame:
         """Returns the table as a polars DataFrame."""
-        self.cursor.execute(f"SELECT * FROM {table_name};")
-        data = self.cursor.fetchall()
-        return pl.DataFrame(data)
+        # note that sqlite fetchall does not return column names
+        # pl function is more convenient
+        return pl.read_database(f"SELECT * FROM {table_name};", self.cursor)
 
     @property
     def last_participant_key(self) -> int:
@@ -114,32 +117,12 @@ class DatabaseManager:
     ) -> None:
         pass
 
-    def add_stimuli(
-        self,
-        participant_key: int,
-        stimulus_config: dict,
-    ) -> None:
-        for name, config in stimulus_config.items():
-            stimulus = StimulusGenerator(config)
-            self.cursor.execute(
-                """
-                INSERT INTO Stimuli (participant_key, name, config, time_points)
-                VALUES (?, ?, ?, ?);
-                """,
-                (
-                    participant_key,
-                    name,
-                    stimulus.serialize_config(),
-                    stimulus.serialize_time_points(),
-                ),
-            )
-        logger.debug("Stimuli from the config added to the database.")
-
     def add_trial(
         self,
-        participant_key: int,
         trial_number: int,
+        participant_key: int,
         stimulus_name: str,
+        stimulus_seed: int,
     ) -> int:
         """
         Add a trial to the database.
@@ -148,38 +131,18 @@ class DatabaseManager:
         """
         self.cursor.execute(
             """
-            INSERT INTO Trials (participant_key, trial_number, stimulus_name, stimulus_id, timestamp)
+            INSERT INTO Trials (trial_number, participant_key, stimulus_name, stimulus_seed, timestamp)
             VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP);
             """,
             (
                 participant_key,
                 trial_number,
                 stimulus_name,
-                self._get_stimuli_id_for_trial(participant_key, stimulus_name),
+                stimulus_seed,
             ),
         )
         logger.debug(f"Trial {trial_number} added to the database.")
         return self.cursor.lastrowid
-
-    def _get_stimuli_id_for_trial(
-        self,
-        participant_key: int,
-        stimulus_name: str,
-    ) -> int:
-        """Auxiliary function to get the stimulus ID for a given participant and
-        stimulus name. Neccessary, because stimuli are added in batches and I am
-        a noob at SQL."""
-        self.cursor.execute(
-            """
-            SELECT stimulus_id FROM Stimuli
-            WHERE participant_key = ? AND name = ?
-            ORDER BY stimulus_id DESC
-            LIMIT 1;
-            """,
-            (participant_key, stimulus_name),
-        )
-        result = self.cursor.fetchone()
-        return result[0] if result else None
 
     def insert_data_point(
         self,

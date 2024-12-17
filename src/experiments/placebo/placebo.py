@@ -1,6 +1,7 @@
 import argparse
 import copy
 import logging
+import os
 import random
 import sys
 from datetime import datetime
@@ -10,10 +11,10 @@ import polars as pl
 from expyriment import control, design, io, stimuli
 from expyriment.misc.constants import C_DARKGREY, K_SPACE
 
-from src.experiments.measurement.database_manager import DatabaseManager
-from src.experiments.measurement.rate_limiter import RateLimiter
-from src.experiments.measurement.stimulus_generator import StimulusGenerator
-from src.experiments.measurement.visual_analogue_scale import VisualAnalogueScale
+from src.database.database_manager import DatabaseManager
+from src.experiments.placebo.rate_limiter import RateLimiter
+from src.experiments.placebo.stimulus_generator import StimulusGenerator
+from src.experiments.placebo.visual_analogue_scale import VisualAnalogueScale
 from src.experiments.thermoino import ThermoinoComplexTimeCourses
 from src.experiments.utils import (
     load_configuration,
@@ -35,7 +36,7 @@ parser = argparse.ArgumentParser(description="Run the pain-placebo experiment.")
 parser.add_argument(
     "-a",
     "--all",
-    action="store_true",
+    action="store_false",  # TODO: change back to store_true after testing
     help="Use all flags for a dry run.",
 )
 parser.add_argument(
@@ -74,12 +75,13 @@ args = parser.parse_args()
 configure_logging(
     stream_level=logging.INFO if not (args.debug or args.all) else logging.DEBUG,
     file_path=LOG_FILE,
+    ignore_libs=[""],
 )
 
 
 # Load scripts and configurations
-script = load_script(EXP_DIR / "measurement_script.yaml")
-config = load_configuration(EXP_DIR / "measurement_config.toml")
+script = load_script(EXP_DIR / "placebo_script.yaml")
+config = load_configuration(EXP_DIR / "placebo_config.toml")
 thermoino_config = load_configuration(EXP_DIR.parent / "thermoino_config.toml")
 stimulus_config = load_configuration(EXP_DIR / "stimulus_config.toml")
 # Experiment settings
@@ -115,55 +117,54 @@ else:
 # Connect to database
 db_manager = DatabaseManager()
 db_rate_limiter = RateLimiter(rate=config["database"]["rate_limit"], use_intervals=True)
-participant_key, participant_id = db_manager.add_participant()
-
-# Save stimulus config to database and shuffle it
-db_manager.add_stimuli(participant_key, stimulus_config)
-stimulus_config = {
-    k: stimulus_config[k]
-    for k in random.sample(list(stimulus_config.keys()), len(stimulus_config))
-}
-
-# Load participant info and update stimulus config with calibration data
-participant_info = read_last_participant(CALIBRATION_RESULTS)
-participant_info["vas0"] = float(participant_info["vas0"])
-participant_info["vas70"] = float(participant_info["vas70"])
-participant_info["temperature_range"] = float(participant_info["temperature_range"])
-participant_info["temperature_baseline"] = round(
-    (participant_info["vas0"] + participant_info["vas70"]) / 2, 2
+participant_key, participant_id = (
+    db_manager.last_participant_key,
+    db_manager.last_participant_id,
 )
-# check if VAS 70 is too high (risk of burn)
-readjustment = False
-if participant_info["vas70"] > 48.0:
-    readjustment = True
-    participant_info["vas70"] = 48.0
-    logging.warning("VAS 70 is too high. Adjusting maximum temperature to 48.0 °C.")
-# check if delta is too low (under 1.5 °C); round results to avoid float weirdness
-temp_range = participant_info["vas70"] - participant_info["vas0"]
-if temp_range < 1.5:
-    readjustment = True
-    missing_amount = 1.5 - temp_range
-    participant_info["vas70"] = round(participant_info["vas70"] + missing_amount, 1)
 
-    if participant_info["vas70"] > 48.0:
-        overflow = participant_info["vas70"] - 48.0
-        participant_info["vas0"] = round(participant_info["vas0"] - overflow, 1)
-        participant_info["vas70"] = 48.0
-    logging.warning("Temperature range is too low. Adjusting delta to 1.5 °C.")
-# calculate new baseline and range
-if readjustment:
-    participant_info["temperature_baseline"] = round(
-        (participant_info["vas0"] + participant_info["vas70"]) / 2, 1
-    )
-    participant_info["temperature_range"] = round(
-        (participant_info["vas70"] - participant_info["vas0"]), 1
-    )
-    logging.info(
-        f"New values: VAS 70 = {participant_info['vas70']} °C, "
-        f"VAS 0 = {participant_info['vas0']} °C, "
-        f"baseline = {participant_info['temperature_baseline']} °C, "
-        f"range = {participant_info['temperature_range']} °C."
-    )
+participant_info = {"id": db_manager.last_participant_id}
+
+
+# # Load participant info and update stimulus config with calibration data
+# participant_info = read_last_participant(CALIBRATION_RESULTS)
+# participant_info["vas0"] = float(participant_info["vas0"])
+# participant_info["vas70"] = float(participant_info["vas70"])
+# participant_info["temperature_range"] = float(participant_info["temperature_range"])
+# participant_info["temperature_baseline"] = round(
+#     (participant_info["vas0"] + participant_info["vas70"]) / 2, 2
+# )
+# # check if VAS 70 is too high (risk of burn)
+# readjustment = False
+# if participant_info["vas70"] > 48.0:
+#     readjustment = True
+#     participant_info["vas70"] = 48.0
+#     logging.warning("VAS 70 is too high. Adjusting maximum temperature to 48.0 °C.")
+# # check if delta is too low (under 1.5 °C); round results to avoid float weirdness
+# temp_range = participant_info["vas70"] - participant_info["vas0"]
+# if temp_range < 1.5:
+#     readjustment = True
+#     missing_amount = 1.5 - temp_range
+#     participant_info["vas70"] = round(participant_info["vas70"] + missing_amount, 1)
+
+#     if participant_info["vas70"] > 48.0:
+#         overflow = participant_info["vas70"] - 48.0
+#         participant_info["vas0"] = round(participant_info["vas0"] - overflow, 1)
+#         participant_info["vas70"] = 48.0
+#     logging.warning("Temperature range is too low. Adjusting delta to 1.5 °C.")
+# # calculate new baseline and range
+# if readjustment:
+#     participant_info["temperature_baseline"] = round(
+#         (participant_info["vas0"] + participant_info["vas70"]) / 2, 1
+#     )
+#     participant_info["temperature_range"] = round(
+#         (participant_info["vas70"] - participant_info["vas0"]), 1
+#     )
+#     logging.info(
+#         f"New values: VAS 70 = {participant_info['vas70']} °C, "
+#         f"VAS 0 = {participant_info['vas0']} °C, "
+#         f"baseline = {participant_info['temperature_baseline']} °C, "
+#         f"range = {participant_info['temperature_range']} °C."
+#     )
 
 # determine order of skin areas based on participant ID
 id_is_odd = int(participant_info["id"]) % 2
@@ -175,7 +176,7 @@ config["stimulus"] |= participant_info
 random.shuffle(config["stimulus"]["seeds"])
 
 # Experiment setup
-exp = design.Experiment(name="cornsweet_illusion")
+exp = design.Experiment(name="pain-placebo")
 exp.set_log_level(0)
 control.initialize(exp)
 screen_size = exp.screen.size
@@ -210,11 +211,11 @@ def get_data_points(
     stopped_time = exp.clock.stopwatch_time
     if db_rate_limiter.is_allowed(stopped_time):
         index = int((stopped_time / 1000) * stimulus.sample_rate)
-        index = min(index, len(stimulus.temperature) - 1)  # prevent index out of bounds
-        db_manager.add_data_point(
+        index = min(index, len(stimulus.y) - 1)  # prevent index out of bounds
+        db_manager.insert_data_point(
             trial_id=trial_id,
             time=stopped_time,
-            temperature=stimulus.temperature[index],
+            temperature=stimulus.y[index],
             rating=vas_slider.rating,
         )
 
@@ -222,7 +223,9 @@ def get_data_points(
 def main():
     # Start experiment
     control.start(skip_ready_screen=True, subject_id=participant_id)
-    logging.info(f"Started measurement with seed order {config['stimulus']['seeds']}.")
+    logging.info(
+        f"Started measurement with seed order {stimulus_config['stimulus']['seeds']}."
+    )
 
     # Introduction
     for text, sound in zip(script[s := "welcome"].values(), audio[s].values()):
@@ -256,12 +259,10 @@ def main():
 
         # Start with a waiting screen for the initalization of the complex time course
         script["wait"].present()
-        stimulus = StimulusGenerator(config)
+        stimulus = StimulusGenerator(stimulus_config)
         thermoino.flush_ctc()
         thermoino.init_ctc(bin_size_ms=thermoino_config["bin_size_ms"])
-        thermoino.create_ctc(
-            temp_course=stimulus.temperature, sample_rate=stimulus.sample_rate
-        )
+        thermoino.create_ctc(temp_course=stimulus.y, sample_rate=stimulus.sample_rate)
         thermoino.load_ctc()
         thermoino.trigger()
 
@@ -300,7 +301,7 @@ def main():
         )
 
         # Log data
-        query = f"SELECT * FROM DataPoints WHERE trial_id = {trial_id};"
+        query = f"SELECT * FROM Data_Points WHERE trial_id = {trial_id};"
         df = pl.read_database(query, db_manager.conn)
         logging.info(
             f"Rating of the stimulus: "
@@ -322,13 +323,13 @@ def main():
         script["approve"].present()
         exp.keyboard.wait(K_SPACE)
 
-    # Save participant data
-    participant_info_ = read_last_participant()  # reload to remove calibration data
-    participant_info_["readjustment"] = readjustment
-    participant_info_["seed_order"] = config["stimulus"]["seeds"]
-    participant_info_["correlations"] = correlations
-    participant_info_["reward"] = reward
-    add_participant_info(participant_info_, MEASUREMENT_RESULTS)
+    # # Save participant data
+    # participant_info_ = read_last_participant()  # reload to remove calibration data
+    # participant_info_["readjustment"] = readjustment
+    # participant_info_["seed_order"] = config["stimulus"]["seeds"]
+    # participant_info_["correlations"] = correlations
+    # participant_info_["reward"] = reward
+    # add_participant_info(participant_info_, MEASUREMENT_RESULTS)
 
     # End of Experiment
     script["bye"].present()
