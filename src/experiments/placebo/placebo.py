@@ -1,7 +1,6 @@
 import argparse
 import copy
 import logging
-import os
 import random
 import sys
 from datetime import datetime
@@ -199,7 +198,7 @@ thermoino.connect()
 
 
 def get_data_points(
-    trial_id: int,
+    trial_key: int,
     stimulus: StimulusGenerator,
 ) -> None:
     """
@@ -212,10 +211,11 @@ def get_data_points(
         index = int((stopped_time / 1000) * stimulus.sample_rate)
         index = min(index, len(stimulus.y) - 1)  # prevent index out of bounds
         db_manager.insert_data_point(
-            trial_id=trial_id,
+            trial_key=trial_key,
             time=stopped_time,
             temperature=stimulus.y[index],
             rating=vas_slider.rating,
+            debug=args.debug or args.all,
         )
 
 
@@ -255,7 +255,7 @@ def main():
         logging.info(
             f"Started trial ({trial + 1}/{total_trials}) with stimulus {name}."
         )
-        trial_id = db_manager.insert_trial(participant_key, trial + 1, name, seed)
+        trial_key = db_manager.insert_trial(trial + 1, name, seed)
 
         # Start with a waiting screen for the initalization of the complex time course
         script["wait"].present()
@@ -282,7 +282,7 @@ def main():
         logging.info("Stimulus started.")
         exp.clock.wait_seconds(
             stimulus.duration,
-            callback_function=lambda: get_data_points(trial_id, stimulus),
+            callback_function=lambda: get_data_points(trial_key, stimulus),
         )
         # add marker for stimulus end here
         logging.info("Stimulus ended.")
@@ -301,7 +301,7 @@ def main():
         )
 
         # Log data
-        query = f"SELECT * FROM Data_Points WHERE trial_id = {trial_id};"
+        query = f"SELECT * FROM Data_Points WHERE trial_key = {trial_key};"
         df = pl.read_database(query, db_manager.conn)
         logging.info(
             f"Rating of the stimulus: "
