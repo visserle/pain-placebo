@@ -75,7 +75,6 @@ args = parser.parse_args()
 configure_logging(
     stream_level=logging.INFO if not (args.debug or args.all) else logging.DEBUG,
     file_path=LOG_FILE,
-    ignore_libs=[""],
 )
 
 
@@ -251,11 +250,12 @@ def main():
     total_trials = len(stimulus_config.keys())
     correlations = []  # between temperature and rating
     reward = 0.0
-    for trial, (name, config) in enumerate(stimulus_config.items()):
+    for trial, seed in enumerate(stimulus_config["stimulus"]["seeds"]):
+        name = "TODO"  # TODO: add name for placebo vs no placebo, etc.
         logging.info(
             f"Started trial ({trial + 1}/{total_trials}) with stimulus {name}."
         )
-        trial_id = db_manager.add_trial(participant_key, trial + 1, name)
+        trial_id = db_manager.insert_trial(participant_key, trial + 1, name, seed)
 
         # Start with a waiting screen for the initalization of the complex time course
         script["wait"].present()

@@ -1,14 +1,10 @@
-# TODO: change add methods into insert methods
-
 import logging
 import sqlite3
-from pathlib import Path
 
 import polars as pl
 
 from src.database.data_config import DataConfig
 from src.database.database_schema import DatabaseSchema
-from src.experiments.placebo.stimulus_generator import StimulusGenerator
 
 logger = logging.getLogger(__name__.rsplit(".", maxsplit=1)[-1])
 
@@ -66,7 +62,7 @@ class DatabaseManager:
             """
         )
         result = self.cursor.fetchone()
-        return result[0] if result else None
+        return result[0] if result else 0
 
     @property
     def last_participant_id(self) -> int:
@@ -77,7 +73,7 @@ class DatabaseManager:
             """
         )
         result = self.cursor.fetchone()
-        return result[0] if result else None
+        return result[0] if result else 0
 
     def insert_participant(
         self,
@@ -117,7 +113,7 @@ class DatabaseManager:
     ) -> None:
         pass
 
-    def add_trial(
+    def insert_trial(
         self,
         trial_number: int,
         participant_key: int,
