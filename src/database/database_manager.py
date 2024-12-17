@@ -54,7 +54,7 @@ class DatabaseManager:
         return pl.read_database(f"SELECT * FROM {table_name};", self.cursor)
 
     @property
-    def last_participant_key(self) -> int:
+    def last_participant_key(self) -> int:  # keys are autoincremented and unique
         self.cursor.execute(
             """
             SELECT participant_key FROM Participants
@@ -65,7 +65,7 @@ class DatabaseManager:
         return result[0] if result else 0
 
     @property
-    def last_participant_id(self) -> int:
+    def last_participant_id(self) -> int:  # ids are given by the user
         self.cursor.execute(
             """
             SELECT participant_id FROM Participants
@@ -107,7 +107,6 @@ class DatabaseManager:
 
     def insert_calibration_results(
         self,
-        participant_key: int,
         vas_0: float,
         vas_70: float,
     ) -> None:
@@ -116,20 +115,23 @@ class DatabaseManager:
             INSERT INTO Calibration_Results (participant_key, vas_0, vas_70, timestamp)
             VALUES (?, ?, ?, CURRENT_TIMESTAMP);
             """,
-            (participant_key, vas_0, vas_70),
+            (
+                self.last_participant_key,
+                vas_0,
+                vas_70,
+            ),
         )
 
     def insert_trial(
         self,
         trial_number: int,
-        participant_key: int,
         stimulus_name: str,
         stimulus_seed: int,
     ) -> int:
         """
         Add a trial to the database.
 
-        Returns the trial ID.
+        Returns the trial key.
         """
         self.cursor.execute(
             """
@@ -137,18 +139,18 @@ class DatabaseManager:
             VALUES (?, ?, ?, ?);
             """,
             (
-                participant_key,
+                self.last_participant_key,
                 trial_number,
                 stimulus_name,
                 stimulus_seed,
             ),
         )
         logger.debug(f"Trial {trial_number} added to the database.")
-        return self.cursor.lastrowid
+        return self.cursor.lastrowid  # return the trial key
 
     def insert_data_point(
         self,
-        trial_id: int,
+        trial_key: int,
         time: float,
         temperature: float,
         rating: float,
@@ -156,10 +158,15 @@ class DatabaseManager:
     ) -> None:
         self.cursor.execute(
             """
-            INSERT INTO Data_Points (trial_id, time, temperature, rating)
+            INSERT INTO Data_Points (trial_key, time, temperature, rating)
             VALUES (?, ?, ?, ?);
             """,
-            (trial_id, time, temperature, rating),
+            (
+                trial_key,
+                time,
+                temperature,
+                rating,
+            ),
         )
         if debug:
             logger.debug(

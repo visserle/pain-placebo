@@ -13,7 +13,7 @@ class DatabaseSchema:
             comment TEXT
         );""")
         cursor.execute("""CREATE TABLE IF NOT EXISTS Trials (
-            trial_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            trial_key INTEGER PRIMARY KEY AUTOINCREMENT,
             participant_key INTEGER,
             trial_number INTEGER,
             stimulus_name TEXT,
@@ -25,20 +25,20 @@ class DatabaseSchema:
         );""")
         cursor.execute("""CREATE TABLE IF NOT EXISTS Markers (
             marker_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            trial_id INTEGER,
+            trial_key INTEGER,
             time REAL,
             marker TEXT,
             unix_time REAL DEFAULT (UNIXEPOCH('subsecond')*1000),
-            FOREIGN KEY (trial_id) REFERENCES Trials(trial_id)
+            FOREIGN KEY (trial_key) REFERENCES Trials(trial_key)
         );""")
         cursor.execute("""CREATE TABLE IF NOT EXISTS Data_Points (
             data_point_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            trial_id INTEGER,
+            trial_key INTEGER,
             time REAL,
             temperature REAL,
             rating REAL,
             unix_time REAL DEFAULT (UNIXEPOCH('subsecond')*1000),
-            FOREIGN KEY (trial_id) REFERENCES Trials(trial_id)
+            FOREIGN KEY (trial_key) REFERENCES Trials(trial_key)
         );""")
         cursor.execute("""CREATE TABLE IF NOT EXISTS Calibration_Results (
             calibration_id INTEGER PRIMARY KEY AUTOINCREMENT,
