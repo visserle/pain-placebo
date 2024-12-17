@@ -34,6 +34,7 @@ class DatabaseManager:
             isolation_level=None,  # autocommit
         )
         self.cursor = self.conn.cursor()
+        self.cursor.execute("PRAGMA foreign_keys = ON;")
         DatabaseSchema.initialize_tables(self.cursor)
 
     def disconnect(self) -> None:
@@ -62,7 +63,10 @@ class DatabaseManager:
             """
         )
         result = self.cursor.fetchone()
-        return result[0] if result else 0
+        if result is None:
+            self._insert_dummy_participant_into_empty_db()
+            return 0
+        return result[0]
 
     @property
     def last_participant_id(self) -> int:  # ids are given by the user
@@ -73,7 +77,19 @@ class DatabaseManager:
             """
         )
         result = self.cursor.fetchone()
-        return result[0] if result else 0
+        if result is None:
+            self._insert_dummy_participant_into_empty_db()
+            return 0
+        return result[0]
+
+    def _insert_dummy_participant_into_empty_db(self) -> None:
+        self.cursor.execute(
+            """
+            INSERT INTO Participants (participant_id, comment
+            ) VALUES (0, 'Empty database: Dummy participant added.');
+            """
+        )
+        logger.debug("Empty database: Dummy participant added.")
 
     def insert_participant(
         self,
@@ -139,8 +155,8 @@ class DatabaseManager:
             VALUES (?, ?, ?, ?);
             """,
             (
-                self.last_participant_key,
                 trial_number,
+                self.last_participant_key,
                 stimulus_name,
                 stimulus_seed,
             ),
@@ -173,16 +189,28 @@ class DatabaseManager:
                 f"Data point added to the database: {time=}, {temperature=}, {rating=}"
             )
 
-    def remove_dummy_data(self) -> None:
-        # remove all data from dummy participants and cascade delete
-        # TODO check if this is correct
-        self.cursor.execute(
-            """
-            DELETE FROM Participants
-            WHERE participant_id = 0;
-            """
-        )
-        logger.info("Dummy data removed from the database.")
+    def remove_participant(
+        self,
+        id: int,
+    ) -> None:
+        try:
+            # remove all data from dummy participants and cascade delete
+            self.cursor.execute(
+                """
+                DELETE FROM Participants
+                WHERE participant_id = ?;
+                """,
+                (id,),
+            )
+            if id == 0:
+                logger.info("Dummy participant removed from the database.")
+            else:
+                logger.info(f"Participant {id} removed from the database.")
+        except sqlite3.IntegrityError as e:
+            logger.error(f"Failed to remove participant {id}: {e}")
+
+    def remove_dummy_participant(self) -> None:
+        self.remove_participant(0)
 
     def delete_database(self) -> None:
         input_ = input(f"Delete database {DB_FILE}? (y/n) ")
@@ -205,5 +233,5 @@ if __name__ == "__main__":
 
     # Example usage of DatabaseManager
     db_manager = DatabaseManager()
-    db_manager.add_participant()
-    db_manager.delete_database()
+    # db_manager.delete_database()
+    db_manager.remove_dummy_participant()

@@ -22,6 +22,7 @@ class DatabaseSchema:
             -- stimulus_config TEXT, # TODO: maybe add this column
             unix_time REAL DEFAULT (UNIXEPOCH('subsecond')*1000),
             FOREIGN KEY (participant_key) REFERENCES Participants(participant_key)
+                ON DELETE CASCADE
         );""")
         cursor.execute("""CREATE TABLE IF NOT EXISTS Markers (
             marker_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -30,6 +31,7 @@ class DatabaseSchema:
             marker TEXT,
             unix_time REAL DEFAULT (UNIXEPOCH('subsecond')*1000),
             FOREIGN KEY (trial_key) REFERENCES Trials(trial_key)
+                ON DELETE CASCADE
         );""")
         cursor.execute("""CREATE TABLE IF NOT EXISTS Data_Points (
             data_point_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -39,6 +41,7 @@ class DatabaseSchema:
             rating REAL,
             unix_time REAL DEFAULT (UNIXEPOCH('subsecond')*1000),
             FOREIGN KEY (trial_key) REFERENCES Trials(trial_key)
+                ON DELETE CASCADE
         );""")
         cursor.execute("""CREATE TABLE IF NOT EXISTS Calibration_Results (
             calibration_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -46,10 +49,12 @@ class DatabaseSchema:
             vas_0 REAL,
             vas_70 REAL,
             FOREIGN KEY (participant_key) REFERENCES Participants(participant_key)
+                ON DELETE CASCADE
         );""")
         cursor.execute("""CREATE TABLE IF NOT EXISTS Placebo_Results (
             placebo_id INTEGER PRIMARY KEY AUTOINCREMENT,
             participant_key INTEGER,
             -- TODO: Add columns for placebo results here 
             FOREIGN KEY (participant_key) REFERENCES Participants(participant_key)
+                ON DELETE CASCADE
         );""")  # TODO: Add columns for placebo results here
