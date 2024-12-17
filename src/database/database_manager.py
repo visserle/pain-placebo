@@ -111,7 +111,13 @@ class DatabaseManager:
         vas_0: float,
         vas_70: float,
     ) -> None:
-        pass
+        self.cursor.execute(
+            """
+            INSERT INTO Calibration_Results (participant_key, vas_0, vas_70, timestamp)
+            VALUES (?, ?, ?, CURRENT_TIMESTAMP);
+            """,
+            (participant_key, vas_0, vas_70),
+        )
 
     def insert_trial(
         self,
@@ -127,8 +133,8 @@ class DatabaseManager:
         """
         self.cursor.execute(
             """
-            INSERT INTO Trials (trial_number, participant_key, stimulus_name, stimulus_seed, timestamp)
-            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP);
+            INSERT INTO Trials (trial_number, participant_key, stimulus_name, stimulus_seed)
+            VALUES (?, ?, ?, ?);
             """,
             (
                 participant_key,
@@ -161,7 +167,15 @@ class DatabaseManager:
             )
 
     def remove_dummy_data(self) -> None:
-        pass
+        # remove all data from dummy participants and cascade delete
+        # TODO check if this is correct
+        self.cursor.execute(
+            """
+            DELETE FROM Participants
+            WHERE participant_id = 0;
+            """
+        )
+        logger.info("Dummy data removed from the database.")
 
     def delete_database(self) -> None:
         input_ = input(f"Delete database {DB_FILE}? (y/n) ")

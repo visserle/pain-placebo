@@ -20,9 +20,16 @@ class DatabaseSchema:
             stimulus_id INTEGER,
             stimulus_seed INTEGER,
             -- stimulus_config TEXT, # TODO: maybe add this column
-            timestamp TEXT,
-            FOREIGN KEY (participant_key) REFERENCES Participants(participant_key),
-            FOREIGN KEY (stimulus_id) REFERENCES Stimuli(stimulus_id)
+            unix_time REAL DEFAULT (UNIXEPOCH('subsecond')*1000),
+            FOREIGN KEY (participant_key) REFERENCES Participants(participant_key)
+        );""")
+        cursor.execute("""CREATE TABLE IF NOT EXISTS Markers (
+            marker_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            trial_id INTEGER,
+            time REAL,
+            marker TEXT,
+            unix_time REAL DEFAULT (UNIXEPOCH('subsecond')*1000),
+            FOREIGN KEY (trial_id) REFERENCES Trials(trial_id)
         );""")
         cursor.execute("""CREATE TABLE IF NOT EXISTS Data_Points (
             data_point_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -30,13 +37,14 @@ class DatabaseSchema:
             time REAL,
             temperature REAL,
             rating REAL,
+            unix_time REAL DEFAULT (UNIXEPOCH('subsecond')*1000),
             FOREIGN KEY (trial_id) REFERENCES Trials(trial_id)
         );""")
         cursor.execute("""CREATE TABLE IF NOT EXISTS Calibration_Results (
             calibration_id INTEGER PRIMARY KEY AUTOINCREMENT,
             participant_key INTEGER,
             vas_0 REAL,
-            vas_70 REAL,    
+            vas_70 REAL,
             FOREIGN KEY (participant_key) REFERENCES Participants(participant_key)
         );""")
         cursor.execute("""CREATE TABLE IF NOT EXISTS Placebo_Results (
