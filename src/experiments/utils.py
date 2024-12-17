@@ -84,7 +84,7 @@ def load_configuration(file_path: str) -> dict:
         return tomllib.load(file)
 
 
-def load_script(file_path: str) -> dict:
+def load_script(file_path: str | Path) -> dict:
     """Load script from a YAML file."""
     with open(file_path, "r", encoding="utf8") as file:
         return yaml.safe_load(file)
@@ -94,7 +94,7 @@ def prepare_script(
     script: dict,
     text_size: int,
     text_box_size: tuple[int, int],
-    parent_key: str = None,
+    parent_key: str | None = None,
 ) -> None:
     """
     Recursively convert existings script strings to CustomTextBox stimuli and preload
@@ -127,7 +127,7 @@ def prepare_script(
 def prepare_audio(
     audio: dict,
     audio_dir: str,
-    parent_key: str = None,
+    parent_key: str | None = None,
 ) -> None:
     """
     Recursively convert existings audio files to Audio stimuli and preload them,

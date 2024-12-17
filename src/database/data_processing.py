@@ -8,7 +8,7 @@ import logging
 import polars as pl
 from polars import col
 
-from src.data.data_config import DataConfig
+from src.database.data_config import DataConfig
 from src.experiments.placebo.stimulus_generator import StimulusGenerator
 from src.features.eda import feature_eda, preprocess_eda
 from src.features.eeg import feature_eeg, preprocess_eeg

@@ -1,3 +1,5 @@
+# TODO: compare with cornsweet_config.toml
+
 [experiment]
 text_size = 40
 text_box_size = [1500, 900]
@@ -56,3 +58,7 @@ temperature_baseline = 47
 temperature_range = 1.5
 vas0 = 42
 vas70 = 46
+
+
+[database]
+rate_limit = 10

@@ -7,7 +7,7 @@ from pathlib import Path
 
 import polars as pl
 
-from src.data.data_config import DataConfig
+from src.database.data_config import DataConfig
 
 IMOTIONS_DATA_CONFIG = DataConfig.load_imotions_config()
 IMOTIONS_DATA_PATH = DataConfig.IMOTIONS_DATA_PATH

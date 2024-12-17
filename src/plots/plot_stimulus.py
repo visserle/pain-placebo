@@ -4,7 +4,7 @@ import numpy as np
 from bokeh.models import BoxAnnotation, ColumnDataSource, FixedTicker, HoverTool
 from bokeh.plotting import figure, show
 
-from src.experiments.measurement.stimulus_generator import StimulusGenerator
+from src.experiments.placebo.stimulus_generator import StimulusGenerator
 
 
 def plot_stimulus_with_shapes(stimulus: StimulusGenerator):

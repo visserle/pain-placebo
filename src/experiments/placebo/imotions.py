@@ -5,7 +5,7 @@ import time
 from collections import namedtuple
 from pathlib import Path
 
-from src.experiments.measurement.rate_limiter import RateLimiter
+from src.experiments.placebo.rate_limiter import RateLimiter
 
 logger = logging.getLogger(__name__.rsplit(".", maxsplit=1)[-1])
 

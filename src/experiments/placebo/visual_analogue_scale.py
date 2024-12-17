@@ -1,6 +1,6 @@
 from expyriment import stimuli
 
-from src.experiments.measurement.rate_limiter import RateLimiter
+from src.experiments.placebo.rate_limiter import RateLimiter
 from src.experiments.utils import scale_1d_value, scale_2d_tuple
 
 CONSTANTS = {

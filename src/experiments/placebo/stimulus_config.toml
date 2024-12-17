@@ -1,0 +1,17 @@
+[stimulus]
+seeds = [133, 243, 265, 396, 467, 658, 681, 743, 806, 841, 870, 952]
+sample_rate = 10
+half_cycle_num = 10
+period_range = [5, 20]
+amplitude_range = [0.3, 1.0]
+inflection_point_range = [-0.4, 0.3]
+shorten_expected_duration = 2
+major_decreasing_half_cycle_num = 3
+major_decreasing_half_cycle_period = 20
+major_decreasing_half_cycle_amplitude = 0.925
+major_decreasing_half_cycle_min_y_intercept = 0.9
+plateau_num = 2
+plateau_duration = 15
+plateau_percentile_range = [25, 50]
+prolonged_minima_num = 1
+prolonged_minima_duration = 5

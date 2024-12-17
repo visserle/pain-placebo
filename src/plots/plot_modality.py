@@ -3,7 +3,7 @@ import polars as pl
 from icecream import ic
 from polars import col
 
-from src.data.database_manager import DatabaseManager
+from src.database.database_manager import DatabaseManager
 from src.features.scaling import scale_min_max, scale_standard
 from src.features.transforming import merge_dfs
 

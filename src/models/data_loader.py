@@ -2,7 +2,7 @@ import numpy as np
 import polars as pl
 from polars import col
 
-from src.data.database_manager import DatabaseManager
+from src.database.database_manager import DatabaseManager
 from src.features.transforming import merge_dfs
 
 

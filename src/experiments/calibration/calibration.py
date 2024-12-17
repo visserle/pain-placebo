@@ -10,10 +10,10 @@ from pathlib import Path
 from expyriment import control, design, io, stimuli
 from expyriment.misc.constants import C_DARKGREY, K_SPACE, K_n, K_y
 
+from src.database.database_manager import DatabaseManager
 from src.experiments.calibration.estimator import BayesianEstimatorVAS
 from src.experiments.participant_data import (
     add_participant_info,
-    read_last_participant,
 )
 from src.experiments.pop_ups import ask_for_calibration_start
 from src.experiments.thermoino import Thermoino
@@ -40,7 +40,7 @@ parser = argparse.ArgumentParser(description="Run the pain-calibration experimen
 parser.add_argument(
     "-a",
     "--all",
-    action="store_true",
+    action="store_false",  # TODO: change to store_true after testing
     help="Use all flags for a dry run.",
 )
 parser.add_argument(
@@ -121,10 +121,13 @@ if args.dummy_stimulus:
 
 
 # Setup experiment
-participant_info = (
-    read_last_participant() if not args.debug else config["dummy_participant"]
-)
-id_is_odd = int(participant_info["id"]) % 2  # determine skin area for calibration
+with DatabaseManager() as db_manager:
+    participant_key, participant_id = (
+        db_manager.last_participant_key,
+        db_manager.last_participant_id,
+    )
+participant_info = {}
+id_is_odd = participant_id % 2  # determine skin area for calibration
 skind_areas = range(1, 7) if id_is_odd else range(6, 0, -1)
 logging.info(f"Use skin area {skind_areas[-2]} for calibration.")
 ask_for_calibration_start()  # pop-up window
@@ -223,7 +226,7 @@ def run_estimation_trials(estimator: BayesianEstimatorVAS) -> None:
 
 def main():
     # Start experiment
-    control.start(skip_ready_screen=True, subject_id=participant_info["id"])
+    control.start(skip_ready_screen=True, subject_id=participant_id)
     logging.info("Started calibration.")
 
     # Introduction

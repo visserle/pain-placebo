@@ -9,7 +9,7 @@ from functools import reduce
 import polars as pl
 from polars import col
 
-from src.experiments.measurement.stimulus_generator import StimulusGenerator
+from src.experiments.placebo.stimulus_generator import StimulusGenerator
 from src.features.transforming import merge_dfs
 
 

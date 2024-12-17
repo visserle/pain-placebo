@@ -5,7 +5,7 @@ import logging
 import numpy as np
 import polars as pl
 
-from src.data.database_manager import DatabaseManager
+from src.database.database_manager import DatabaseManager
 
 # TODO: add more quality checks based on non-trialized imotions data
 # - packet loss
