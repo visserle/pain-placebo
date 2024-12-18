@@ -70,6 +70,7 @@ class DatabaseManager:
 
     @property
     def last_participant_id(self) -> int:  # ids are given by the user
+        """Only used in add_participant.py."""
         self.cursor.execute(
             """
             SELECT participant_id FROM Participants
@@ -93,30 +94,31 @@ class DatabaseManager:
 
     def insert_participant(
         self,
-        participant_data: dict,
-    ):
+        participant_id: int,
+        gender: str,
+        age: int,
+        comment: str | None = None,
+    ) -> int:
         # Check if participant already exists
-        if not participant_data["id"] == 0:  # Dummy participant
+        if not participant_id == 0:  # Dummy participant
             result = self.conn.execute(f"""
                 SELECT COUNT(participant_id) FROM Participants
-                WHERE participant_id = {participant_data["id"]};
+                WHERE participant_id = {participant_id};
             """).fetchone()[0]
             if result:
-                logger.warning(
-                    f"Participant with ID {participant_data['id']} already exists."
-                )
+                logger.warning(f"Participant with ID {participant_id} already exists.")
 
         # Insert participant
         self.cursor.execute(
             """
-            INSERT INTO Participants (participant_id, comment, age, gender)
+            INSERT INTO Participants (participant_id, gender, age, comment)
             VALUES (?, ?, ?, ?);
             """,
             (
-                participant_data["id"],
-                participant_data["comment"],
-                participant_data["age"],
-                participant_data["gender"],
+                participant_id,
+                gender,
+                age,
+                comment,
             ),
         )
         return self.cursor.lastrowid
@@ -193,6 +195,11 @@ class DatabaseManager:
         self,
         id: int,
     ) -> None:
+        response = input(f"Remove participant {id}? (y/n) ")
+        if response.lower() != "y":
+            logger.info("Participant removal cancelled.")
+            return
+
         try:
             # remove all data from dummy participants and cascade delete
             self.cursor.execute(
@@ -211,6 +218,15 @@ class DatabaseManager:
 
     def remove_dummy_participant(self) -> None:
         self.remove_participant(0)
+
+    def anonymize_database(self) -> None:
+        input_ = input(f"Anonymize database {DB_FILE}? (y/n) ")
+        if input_.lower() != "y":
+            logger.info("Database anonymization cancelled.")
+            return
+
+        # TODO: remove timestamps / unix_time
+        # TODO: scramble participant ids
 
     def delete_database(self) -> None:
         input_ = input(f"Delete database {DB_FILE}? (y/n) ")

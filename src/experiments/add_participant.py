@@ -12,25 +12,28 @@ def add_participant() -> int:
         participant_id = input("Enter new participant id: ")
         participant_id = int(participant_id) if participant_id else 0
         dummy = " (dummy)" if participant_id == 0 else ""
-        participant_data = {"id": participant_id}
+
         # Ask for age and gender if the participant is not a dummy
         if not dummy:
-            participant_data["age"] = _get_valid_age()
-            participant_data["gender"] = _get_valid_gender()
+            gender = _get_valid_gender()
+            age = _get_valid_age()
         else:
-            participant_data["age"] = 20
-            participant_data["gender"] = "f"
-        participant_data["comment"] = input("Enter comment (optional): ")
+            age = 20
+            gender = "f"
+        comment = input("Enter comment (optional): ")
 
-        participant_key = db.insert_participant(participant_data)
+        db.insert_participant(
+            participant_id=participant_id,
+            gender=gender,
+            age=age,
+            comment=comment,
+        )
 
     logger.info(f"Participant {participant_id}{dummy} added to the database.")
-    logger.debug(f"Age: {participant_data['age']}")
-    logger.debug(f"Gender: {participant_data['gender']}")
-    if participant_data["comment"]:
-        logger.info(f"Comment: {participant_data['comment']}")
-
-    return participant_key
+    logger.debug(f"Age: {age}")
+    logger.debug(f"Gender: {gender}")
+    if comment:
+        logger.info(f"Comment: {comment}")
 
 
 def _get_valid_age() -> int:
