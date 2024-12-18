@@ -23,7 +23,10 @@ class BayesianEstimatorVAS:
         Conducts a single estimation trial and updates internal states based on the
         response.
 
-    get_estimate() -> float:
+
+    Properties
+    ----------
+    estimate -> float:
         Retrieves the final estimated temperature after all trials are conducted.
 
     Example
@@ -58,47 +61,6 @@ class BayesianEstimatorVAS:
         likelihood_std: float,
         reduction_factor: float = 0.85,
     ):
-        """
-        Initialize the VAS_Estimator object for recursive Bayesian estimation of
-        temperature based on VAS values.
-
-        Parameters
-        ----------
-        vas_value : int or float
-            VAS value to be estimated.
-
-        trials : int
-            Number of trials for the estimation process.
-
-        temp_start : float
-            Initial temperature for estimation in degrees Celsius.
-            Defaults to 38 degrees Celsius for VAS 0 (pain threshold) with Capsaicin.
-
-        temp_std : float
-            Standard deviation of the initial Gaussian prior distribution for
-            temperature.
-
-        likelihood_std : float
-            Standard deviation of the likelihood function used in Bayesian updating.
-
-        reduction_factor : float, optional, default=0.85
-            Factor to reduce the standard deviation of the likelihood function after
-            each trial. This allows the model to become more confident in its estimates
-            as more data is collected.
-
-        Attributes
-        ----------
-        prior : np.ndarray
-            Initial prior probability distribution over the range of temperatures.
-
-        current_temp : float
-            Current best estimate of the temperature.
-            If the current temperate exceeds the MAX_TEMP, a warning is logged.
-
-        temps, priors, likelihoods, posteriors : list
-            Lists to store temperature, prior distributions, likelihood functions, and
-            posterior distributions for each trial, respectively.
-        """
         self.vas_value = vas_value
         self.trials = trials
         self.temp_start = round(temp_start, 1)
@@ -139,6 +101,11 @@ class BayesianEstimatorVAS:
     @property
     def steps(self) -> np.ndarray:
         return np.diff(self.temps)
+
+    @property
+    def estimate(self) -> float:
+        """Estimated temperature for the given VAS value."""
+        return self.temps[-1]
 
     def conduct_trial(
         self,
@@ -202,7 +169,7 @@ class BayesianEstimatorVAS:
         logger.info(
             "Calibration estimate for VAS %s: %s °C.",
             self.vas_value,
-            self.get_estimate(),
+            self.estimate,
         )
         logger.debug(
             "Calibration steps for VAS %s were (°C): %s.",
@@ -223,6 +190,3 @@ class BayesianEstimatorVAS:
         True if the steps are not all in the same direction, False otherwise.
         """
         return ~(np.all(self.steps >= 0) or np.all(self.steps <= 0))
-
-    def get_estimate(self) -> float:
-        return self.temps[-1]
