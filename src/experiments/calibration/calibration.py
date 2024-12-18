@@ -12,9 +12,6 @@ from expyriment.misc.constants import C_DARKGREY, K_SPACE, K_n, K_y
 
 from src.database.database_manager import DatabaseManager
 from src.experiments.calibration.estimator import BayesianEstimatorVAS
-from src.experiments.participant_data import (
-    add_participant_info,
-)
 from src.experiments.pop_ups import ask_for_calibration_start
 from src.experiments.thermoino import Thermoino
 from src.experiments.utils import (
@@ -119,19 +116,17 @@ if args.dummy_stimulus:
     config["estimator"]["trials_vas70"] = 2
     config["estimator"]["trials_vas0"] = 2
 
-
-# Setup experiment
+# Perpare experiment
 with DatabaseManager() as db_manager:
-    participant_key, participant_id = (
-        db_manager.last_participant_key,
-        db_manager.last_participant_id,
-    )
+    participant_key, participant_id = (db_manager.last_participant_id,)
 participant_info = {}
 id_is_odd = participant_id % 2  # determine skin area for calibration
 skind_areas = range(1, 7) if id_is_odd else range(6, 0, -1)
 logging.info(f"Use skin area {skind_areas[-2]} for calibration.")
 ask_for_calibration_start()  # pop-up window
 time.sleep(1)  # wait for the pop-up to close
+
+# Initialize experiment
 exp = design.Experiment(name=EXP_NAME)
 exp.set_log_level(0)
 control.initialize(exp)
@@ -158,7 +153,8 @@ for name, color in zip(
         colour=color,
     )
     cross[name].preload()
-vas_pictures = {}  # load VAS pictures, scale and move them up for a better fit
+# load VAS pictures, scale and move them up for a better fit
+vas_pictures = {}
 for pic in ["unmarked", "marked"]:
     vas_pictures[pic] = stimuli.Picture(
         Path(EXP_DIR / f"vas_{pic}.png").as_posix(),
@@ -204,7 +200,7 @@ def run_estimation_trials(estimator: BayesianEstimatorVAS) -> None:
             config["stimulus"]["iti_duration"] + random.randint(0, 1)
         )
         thermoino.trigger()
-        time_to_ramp_up, _ = thermoino.set_temp(estimator.get_estimate())
+        time_to_ramp_up, _ = thermoino.set_temp(estimator.estimate)
         cross["pain"].present()
         exp.clock.wait_seconds(
             config["stimulus"]["stimulus_duration"] + time_to_ramp_up
@@ -216,12 +212,13 @@ def run_estimation_trials(estimator: BayesianEstimatorVAS) -> None:
         script[f"question_vas{estimator.vas_value}"].present()
         found, _ = exp.keyboard.wait(keys=[K_y, K_n])
         if found == K_y:
-            estimator.conduct_trial(response="y", trial=trial)  # chr(K_y) = 'y'
+            estimator.conduct_trial(response="y", trial=trial)
             script["answer_yes"].present()
         elif found == K_n:
             estimator.conduct_trial(response="n", trial=trial)
             script["answer_no"].present()
         exp.clock.wait_seconds(1)
+    return estimator.estimate
 
 
 def main():
@@ -252,11 +249,9 @@ def main():
     audio["question_preexposure"].play(maxtime=args.muted)
     found, _ = exp.keyboard.wait(keys=[K_y, K_n])
     if found == K_y:
-        participant_info["preexposure_painful"] = True
         script["answer_yes"].present()
         logging.info("Pre-exposure was painful.")
     elif found == K_n:
-        participant_info["preexposure_painful"] = False
         config["estimator"]["temp_start_vas0"] += config["stimulus"][
             "preexposure_correction"
         ]
@@ -277,7 +272,7 @@ def main():
         likelihood_std=config["estimator"]["likelihood_std_vas0"],
     )
     logging.info("Started VAS 0 (pain threshold) estimation.")
-    run_estimation_trials(estimator=estimator_vas0)
+    vas0 = run_estimation_trials(estimator=estimator_vas0)
     script["excellent"].present()  # say something nice to the participant
     audio["excellent"].play(maxtime=args.muted)
     exp.clock.wait_seconds(1.5)
@@ -308,30 +303,28 @@ def main():
     estimator_vas70 = BayesianEstimatorVAS(
         vas_value=70,
         trials=config["estimator"]["trials_vas70"],
-        temp_start=estimator_vas0.get_estimate()
-        + config["estimator"]["temp_start_vas70_offset"],
+        temp_start=vas0 + config["estimator"]["temp_start_vas70_offset"],
         temp_std=config["estimator"]["temp_std_vas70"],
         likelihood_std=config["estimator"]["likelihood_std_vas70"],
     )
     logging.info("Started VAS 70 estimation.")
-    run_estimation_trials(estimator=estimator_vas70)
+    vas70 = run_estimation_trials(estimator=estimator_vas70)
 
     # Save participant data
-    participant_info["vas0"] = estimator_vas0.get_estimate()
-    participant_info["vas70"] = estimator_vas70.get_estimate()
-    participant_info["temperature_range"] = round(
-        participant_info["vas70"] - participant_info["vas0"], 1
-    )
-    participant_info["vas0_temps"] = estimator_vas0.temps
-    participant_info["vas70_temps"] = estimator_vas70.temps
+    temperature_range = round(vas70 - vas0, 1)
     logging.info(
-        f"Calibrated values: VAS 0 = {participant_info['vas0']}, "
-        f"VAS 70 = {participant_info['vas70']}, "
-        f"range = {participant_info['temperature_range']}."
+        f"Calibrated values: VAS 0 = {vas0}, "
+        f"VAS 70 = {vas70}, "
+        f"range = {temperature_range}."
     )
-    add_participant_info(participant_info, RESULTS_FILE) if not args.debug else None
-    if args.debug:
-        logging.debug(f"Participant data: {participant_info}")
+    # TODO: no info saved if preexposure was painful
+
+    # Save results
+    with DatabaseManager() as db_manager:
+        db_manager.insert_calibration_results(
+            vas_0=vas0,
+            vas_70=vas70,
+        )
 
     # End of Experiment
     script["bye"].present()
