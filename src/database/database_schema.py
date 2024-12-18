@@ -6,6 +6,7 @@ class DatabaseSchema:
     def initialize_tables(cursor: sqlite3.Cursor) -> None:
         cursor.execute("""CREATE TABLE IF NOT EXISTS Participants (
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            unix_timestamp REAL DEFAULT (UNIXEPOCH('subsecond')*1000),
             participant_key INTEGER PRIMARY KEY AUTOINCREMENT,
             participant_id INTEGER NOT NULL,
             gender TEXT,
@@ -19,7 +20,7 @@ class DatabaseSchema:
             stimulus_name TEXT,
             stimulus_id INTEGER,
             stimulus_seed INTEGER,
-            -- stimulus_config TEXT, # TODO: maybe add this column
+            -- stimulus_config TEXT, # TODO: maybe add this column back
             unix_time REAL DEFAULT (UNIXEPOCH('subsecond')*1000),
             FOREIGN KEY (participant_key) REFERENCES Participants(participant_key)
                 ON DELETE CASCADE
@@ -48,6 +49,7 @@ class DatabaseSchema:
             participant_key INTEGER,
             vas_0 REAL,
             vas_70 REAL,
+            unix_time REAL DEFAULT (UNIXEPOCH('subsecond')*1000),
             FOREIGN KEY (participant_key) REFERENCES Participants(participant_key)
                 ON DELETE CASCADE
         );""")
@@ -55,6 +57,7 @@ class DatabaseSchema:
             placebo_id INTEGER PRIMARY KEY AUTOINCREMENT,
             participant_key INTEGER,
             -- TODO: Add columns for placebo results here 
+            unix_time REAL DEFAULT (UNIXEPOCH('subsecond')*1000),
             FOREIGN KEY (participant_key) REFERENCES Participants(participant_key)
                 ON DELETE CASCADE
         );""")  # TODO: Add columns for placebo results here
