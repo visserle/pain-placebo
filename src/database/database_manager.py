@@ -55,11 +55,11 @@ class DatabaseManager:
         return pl.read_database(f"SELECT * FROM {table_name};", self.cursor)
 
     @property
-    def last_participant_key(self) -> int:  # keys are autoincremented and unique
+    def current_participant_key(self) -> int:  # keys are autoincremented and unique
         self.cursor.execute(
             """
             SELECT participant_key FROM Participants
-            ORDER BY ROWID DESC LIMIT 1;  -- ROWID is a built-in column
+            ORDER BY ROWID DESC LIMIT 1; -- ROWID for the last inserted row
             """
         )
         result = self.cursor.fetchone()
@@ -69,12 +69,12 @@ class DatabaseManager:
         return result[0]
 
     @property
-    def last_participant_id(self) -> int:  # ids are given by the user
+    def current_participant_id(self) -> int:  # ids are given by the user
         """Only used in add_participant.py."""
         self.cursor.execute(
             """
             SELECT participant_id FROM Participants
-            ORDER BY ROWID DESC LIMIT 1;
+            ORDER BY ROWID DESC LIMIT 1;  
             """
         )
         result = self.cursor.fetchone()
@@ -130,11 +130,11 @@ class DatabaseManager:
     ) -> None:
         self.cursor.execute(
             """
-            INSERT INTO Calibration_Results (participant_key, vas_0, vas_70, timestamp)
-            VALUES (?, ?, ?, CURRENT_TIMESTAMP);
+            INSERT INTO Calibration_Results (participant_key, vas_0, vas_70)
+            VALUES (?, ?, ?);
             """,
             (
-                self.last_participant_key,
+                self.current_participant_key,
                 vas_0,
                 vas_70,
             ),
@@ -158,7 +158,7 @@ class DatabaseManager:
             """,
             (
                 trial_number,
-                self.last_participant_key,
+                self.current_participant_key,
                 stimulus_name,
                 stimulus_seed,
             ),
@@ -174,6 +174,7 @@ class DatabaseManager:
         rating: float,
         debug: bool = False,
     ) -> None:
+        # NOTE: no trial_key property because in this context it would be too costly
         self.cursor.execute(
             """
             INSERT INTO Data_Points (trial_key, time, temperature, rating)
@@ -225,8 +226,7 @@ class DatabaseManager:
             logger.info("Database anonymization cancelled.")
             return
 
-        # TODO: remove timestamps / unix_time
-        # TODO: scramble participant ids
+        # TODO: remove timestamps / unix_time and scramble participant ids
 
     def delete_database(self) -> None:
         input_ = input(f"Delete database {DB_FILE}? (y/n) ")
