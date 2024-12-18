@@ -6,12 +6,12 @@ class DatabaseSchema:
     def initialize_tables(cursor: sqlite3.Cursor) -> None:
         cursor.execute("""CREATE TABLE IF NOT EXISTS Participants (
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-            unix_timestamp REAL DEFAULT (UNIXEPOCH('subsecond')*1000),
             participant_key INTEGER PRIMARY KEY AUTOINCREMENT,
             participant_id INTEGER NOT NULL,
             gender TEXT,
             age INTEGER,
             comment TEXT
+            unix_time REAL DEFAULT (UNIXEPOCH('subsecond')*1000),
         );""")
         cursor.execute("""CREATE TABLE IF NOT EXISTS Trials (
             trial_key INTEGER PRIMARY KEY AUTOINCREMENT,
