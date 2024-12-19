@@ -1,14 +1,18 @@
 import logging
+import shutil
 import sqlite3
+from datetime import datetime
+from pathlib import Path
 
 import polars as pl
 
-from src.database.data_config import DataConfig
 from src.database.database_schema import DatabaseSchema
 
 logger = logging.getLogger(__name__.rsplit(".", maxsplit=1)[-1])
 
-DB_FILE = DataConfig.DB_FILE
+DB_FILE = Path("data/pain-placebo.db")
+BACKUP_DIR = DB_FILE.parent / "backups"
+BACKUP_DIR.mkdir(exist_ok=True)
 
 
 class DatabaseManager:
@@ -101,6 +105,19 @@ class DatabaseManager:
             return 0  # dummy participant id
         return result[0]
 
+    @property
+    def last_trial_key(self) -> int:
+        self.cursor.execute(
+            """
+            SELECT trial_key FROM Trials
+            ORDER BY ROWID DESC LIMIT 1;
+            """
+        )
+        result = self.cursor.fetchone()
+        if result is None:
+            return 1
+        return result[0]
+
     def _insert_dummy_participant_into_empty_db(self) -> None:
         self.cursor.execute(
             """
@@ -113,8 +130,8 @@ class DatabaseManager:
     def insert_participant(
         self,
         participant_id: int,
-        gender: str,
         age: int,
+        gender: str,
         comment: str | None = None,
     ) -> int:
         # Check if participant already exists
@@ -129,17 +146,19 @@ class DatabaseManager:
         # Insert participant
         self.cursor.execute(
             """
-            INSERT INTO Participants (participant_id, gender, age, comment)
+            INSERT INTO Participants (participant_id, age, gender, comment)
             VALUES (?, ?, ?, ?);
             """,
             (
                 participant_id,
-                gender,
                 age,
+                gender,
                 comment,
             ),
         )
-        return self.cursor.lastrowid
+        # Create backup after successful insertion
+        if not participant_id == 0:  # Dummy participant
+            self.backup_database()
 
     def insert_calibration_results(
         self,
@@ -182,32 +201,50 @@ class DatabaseManager:
             ),
         )
         logger.debug(f"Trial {trial_number} added to the database.")
-        return self.cursor.lastrowid  # return the trial key
 
     def insert_data_point(
         self,
         trial_key: int,
-        time: float,
         temperature: float,
         rating: float,
+        time: float,
         debug: bool = False,
     ) -> None:
         self.cursor.execute(
             """
-            INSERT INTO Data_Points (trial_key, time, temperature, rating)
+            INSERT INTO Data_Points (trial_key, temperature, rating, time)
             VALUES (?, ?, ?, ?);
             """,
             (
                 trial_key,  # no self.current_trial_key to avoid unnecessary queries
-                time,
                 temperature,
                 rating,
+                time,
             ),
         )
         if debug:
             logger.debug(
-                f"Data point added to the database: {time=}, {temperature=}, {rating=}"
+                f"Data point added to the database: {temperature=}, {rating=}, {time=}"
             )
+
+    def insert_marker(
+        self,
+        trial_key: int,
+        marker: str,
+        time: float,
+    ) -> None:
+        self.cursor.execute(
+            """
+            INSERT INTO Markers (trial_key, marker, time)
+            VALUES (?, ?, ?);
+            """,
+            (
+                trial_key,
+                marker,
+                time,
+            ),
+        )
+        logger.debug(f"Marker '{marker}' added to the database.")
 
     def insert_questionnaire(
         self,
@@ -275,6 +312,27 @@ class DatabaseManager:
             logger.info(f"Database {DB_FILE} deleted.")
         else:
             logger.error(f"Database {DB_FILE} does not exist.")
+
+    def backup_database(self) -> None:
+        """Create a backup of the database."""
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_path = BACKUP_DIR / f"pain-placebo_{timestamp}.db"
+
+        try:
+            # Ensure the database is not being written to during backup
+            self.cursor.execute("BEGIN IMMEDIATE")
+            shutil.copy2(DB_FILE, backup_path)
+            logger.debug(f"Database backed up to {backup_path}")
+
+            # Keep only last 5 backups
+            backups = sorted(BACKUP_DIR.glob("pain-placebo_*.db"))
+            if len(backups) > 5:
+                for backup in backups[:-5]:
+                    backup.unlink()
+                    logger.debug(f"Removed old backup: {backup}")
+
+        except Exception as e:
+            logger.error(f"Backup failed: {e}")
 
 
 if __name__ == "__main__":
