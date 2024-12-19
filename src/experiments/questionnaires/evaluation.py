@@ -1,36 +1,70 @@
 import logging
 import re
-from pathlib import Path
 
-from src.experiments.participant_data import add_participant_info
 from src.experiments.questionnaires.scoring_schemas import SCORING_SCHEMAS
-
-RESULTS_DIR = Path("data/experiments/questionnaires")
-RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
 logger = logging.getLogger(__name__.rsplit(".", maxsplit=1)[-1])
 
 
-def _extract_number(string: str) -> int:
-    """Used to get the score from items with alternative options (e.g. 1a, 1b)."""
-    match = re.search(r"\d+", string)
-    return int(match.group()) if match else None
+"""
+Nomenclature:
+answers = raw data from the questionnaire
+scores = calculated total score + component scores
+result = raw data + scores
+"""
 
 
-def score_results(
+def get_results(
+    scale: str,
+    questionnaire: dict,
+    answers: dict,
+) -> None:
+    if not answers:
+        logger.debug(
+            f"No answers available for participant on scale: {scale.upper()}. "
+            "Not saving results."
+        )
+        return
+
+    result = {}
+    score = score_answers(scale, answers)
+
+    # For general questionnaires we don't have a score and only save the answers
+    if scale.split("_")[0] == "general":
+        prefix = ""
+    else:
+        # Update participant info with scores
+        print(score)
+        result |= {component: score[component] for component in score}
+        prefix = "q"  # e.g. q1, q2, etc.
+
+    # Add raw answers to the participant info
+    result |= {
+        f'{prefix}{question["id"]}': answers[f'{prefix}{question["id"]}']
+        for question in questionnaire.get("questions", [])
+    }
+    return result
+
+
+def score_answers(
     scale: str,
     answers: dict,
 ) -> dict:
     """
     Calculate the score for each component of the questionnaire.
     """
+
     score = {}
     schema = SCORING_SCHEMAS.get(scale)
 
     if not schema:
-        logger.error(
-            f"No schema found for scale: {scale.upper()}. Returning empty score."
-        )
+        if not scale.split("_")[0].lower() == "general":
+            logger.error(
+                f"No schema found for scale: {scale.upper()}. Returning empty score."
+            )
+        return score
+
+    if scale.split("_")[0].lower() == "general":
         return score
 
     for component, questions in schema["components"].items():
@@ -59,6 +93,7 @@ def score_results(
             (score["total"] - min_score) / (max_score - min_score) * 100, 2
         )
 
+    # Log and alert if necessary
     formatted_score = ", ".join(f"{key}: {value}" for key, value in score.items())
     logger.info(f"{scale.upper()} score = {formatted_score}.")
     if "alert_threshold" in schema and score["total"] >= schema["alert_threshold"]:
@@ -67,36 +102,7 @@ def score_results(
     return score
 
 
-def save_results(
-    participant_info: dict,
-    scale: str,
-    questionnaire: dict,
-    answers: dict,
-    score: dict,
-) -> None:
-    if not answers:
-        logger.debug(
-            "No answers available for participant: "
-            f"{participant_info.get('id', 'unknown')}, scale: {scale.upper()}. "
-            "Not saving results."
-        )
-        return
-
-    filename = RESULTS_DIR / f"{scale}_results.csv"
-    # Avoid modifying the original participant_info
-    local_participant_info = participant_info.copy()
-
-    # For general questionnaires we don't have a score and only save the answers
-    if scale.split("_")[0] == "general":
-        prefix = ""
-    else:
-        # Update participant info with scores
-        local_participant_info |= {component: score[component] for component in score}
-        prefix = "q"  # e.g. q1, q2, etc.
-
-    # Add raw answers to the participant info
-    local_participant_info |= {
-        f'{prefix}{question["id"]}': answers[f'{prefix}{question["id"]}']
-        for question in questionnaire.get("questions", [])
-    }
-    add_participant_info(local_participant_info, filename)
+def _extract_number(string: str) -> int:
+    """Used to get the score from items with alternative options (e.g. 1a, 1b)."""
+    match = re.search(r"\d+", string)
+    return int(match.group()) if match else None

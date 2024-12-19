@@ -12,13 +12,8 @@ import requests
 import yaml
 from flask import Flask, after_this_request, redirect, render_template, request, url_for
 
-from src.experiments.participant_data import (
-    read_last_participant,
-)
-from src.experiments.questionnaires.evaluation import (
-    save_results,
-    score_results,
-)
+from src.database.database_manager import DatabaseManager
+from src.experiments.questionnaires.evaluation import get_results
 from src.log_config import configure_logging
 
 QUESTIONNAIRES = [
@@ -49,7 +44,7 @@ parser.add_argument(
     "-d",
     "--debug",
     action="store_true",
-    help="Enable debug mode. Data will not be saved.",
+    help="Enable debug mode.",
 )
 parser.add_argument(
     "-w",
@@ -67,11 +62,6 @@ configure_logging(
     file_path=log_file if not args.debug else None,
     ignore_libs=["werkzeug", "urllib3", "requests"],
 )
-if args.debug:
-    logging.debug("Debug mode is enabled. Data will not be saved.")
-
-# Load participant data
-participant_info = read_last_participant() if not args.debug else dict(id=0)
 
 app = Flask(__name__)
 
@@ -124,16 +114,12 @@ def questionnaire_handler(scale):
     if request.method == "POST":
         answers = request.form
         logging.debug(f"{scale.upper()} answers = {answers}")
-        score = (
-            score_results(scale, answers) if scale.split("_")[0] != "general" else None
+        results = get_results(
+            scale, current_questionnaire, answers
         )  # general questionnaire has no scoring
-        save_results(
-            participant_info,
-            scale,
-            current_questionnaire,
-            answers,
-            score,
-        ) if not args.debug else None
+        # save results to database
+        with DatabaseManager() as db:
+            db.insert_questionnaire(scale, results)
 
         next_index = questionnaires.index(scale) + 1
         if next_index < len(questionnaires):

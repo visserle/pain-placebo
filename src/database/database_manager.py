@@ -15,27 +15,30 @@ class DatabaseManager:
     def __init__(self) -> None:
         self.conn = None
         self.cursor = None
-        self.connect()
+
+        # Initialize database and tables
+        try:
+            self.connect()
+            DatabaseSchema.initialize_tables(self.cursor)
+        finally:
+            self.disconnect()
 
     def __enter__(self):
+        self.connect()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.disconnect()
-        if exc_type:
-            logger.error(f"Exception occurred: {exc_type}: {exc_value}")
-            return False  # re-raise the exception
-        return True
 
     def connect(self) -> None:
         """Establishes a connection to the SQLite database."""
-        self.conn = sqlite3.connect(
-            DB_FILE,
-            isolation_level=None,  # autocommit
-        )
-        self.cursor = self.conn.cursor()
-        self.cursor.execute("PRAGMA foreign_keys = ON;")
-        DatabaseSchema.initialize_tables(self.cursor)
+        if not self.conn:
+            self.conn = sqlite3.connect(
+                DB_FILE,
+                isolation_level=None,  # autocommit
+            )
+            self.cursor = self.conn.cursor()  # bit of an anti-pattern
+            self.cursor.execute("PRAGMA foreign_keys = ON;")
 
     def disconnect(self) -> None:
         """Closes the connection to the SQLite database."""
@@ -44,18 +47,33 @@ class DatabaseManager:
             self.conn = None
             self.cursor = None
 
+    def execute(
+        self,
+        sql: str,
+    ) -> "DatabaseManager":
+        """Shortcut for executing SQL queries. Does not fetch results."""
+        if self.conn is None:
+            raise ConnectionError(
+                "Database not connected. Use 'with' statement or call connect() first."
+            )
+        return self.cursor.execute(sql)
+
     def get_table(
         self,
         table_name: str,
         exclude_invalid_data: bool = True,  # TODO: implement
     ) -> pl.DataFrame:
         """Returns the table as a polars DataFrame."""
-        # note that sqlite fetchall does not return column names
-        # pl function is more convenient
-        return pl.read_database(f"SELECT * FROM {table_name};", self.cursor)
+        # alternative: pl.read_database(f"SELECT * FROM {table_name};", self.cursor)
+        result = self.cursor.execute(f"SELECT * FROM {table_name};").fetchall()
+        return pl.DataFrame(
+            result,
+            schema=next(zip(*self.cursor.description)),
+            orient="row",
+        )
 
     @property
-    def current_participant_key(self) -> int:  # keys are autoincremented and unique
+    def last_participant_key(self) -> int:  # keys are autoincremented and unique
         self.cursor.execute(
             """
             SELECT participant_key FROM Participants
@@ -65,11 +83,11 @@ class DatabaseManager:
         result = self.cursor.fetchone()
         if result is None:
             self._insert_dummy_participant_into_empty_db()
-            return 0
+            return 1  # autoincrement key starts at 1 (while dummy id is 0)
         return result[0]
 
     @property
-    def current_participant_id(self) -> int:  # ids are given by the user
+    def last_participant_id(self) -> int:  # ids are given by the user
         """Only used in add_participant.py."""
         self.cursor.execute(
             """
@@ -80,7 +98,7 @@ class DatabaseManager:
         result = self.cursor.fetchone()
         if result is None:
             self._insert_dummy_participant_into_empty_db()
-            return 0
+            return 0  # dummy participant id
         return result[0]
 
     def _insert_dummy_participant_into_empty_db(self) -> None:
@@ -134,7 +152,7 @@ class DatabaseManager:
             VALUES (?, ?, ?);
             """,
             (
-                self.current_participant_key,
+                self.last_participant_key,
                 vas_0,
                 vas_70,
             ),
@@ -158,7 +176,7 @@ class DatabaseManager:
             """,
             (
                 trial_number,
-                self.current_participant_key,
+                self.last_participant_key,
                 stimulus_name,
                 stimulus_seed,
             ),
@@ -174,14 +192,13 @@ class DatabaseManager:
         rating: float,
         debug: bool = False,
     ) -> None:
-        # NOTE: no trial_key property because in this context it would be too costly
         self.cursor.execute(
             """
             INSERT INTO Data_Points (trial_key, time, temperature, rating)
             VALUES (?, ?, ?, ?);
             """,
             (
-                trial_key,
+                trial_key,  # no self.current_trial_key to avoid unnecessary queries
                 time,
                 temperature,
                 rating,
@@ -191,6 +208,24 @@ class DatabaseManager:
             logger.debug(
                 f"Data point added to the database: {time=}, {temperature=}, {rating=}"
             )
+
+    def insert_questionnaire(
+        self,
+        scale: str,
+        results: dict,
+    ) -> None:
+        scale = scale.replace("-", "_")
+        self.cursor.execute(
+            f"""
+            INSERT INTO Questionnaire_{scale.upper()} (participant_key, {', '.join(results.keys())})
+            VALUES (?, {', '.join('?' for _ in results)});
+            """,
+            (
+                self.last_participant_key,
+                *results.values(),
+            ),
+        )
+        logger.debug(f"Questionnaire {scale.upper()} added to the database.")
 
     def remove_participant(
         self,
@@ -225,8 +260,8 @@ class DatabaseManager:
         if input_.lower() != "y":
             logger.info("Database anonymization cancelled.")
             return
-
         # TODO: remove timestamps / unix_time and scramble participant ids
+        logging.info("Anonymizing database not implemented yet.")
 
     def delete_database(self) -> None:
         input_ = input(f"Delete database {DB_FILE}? (y/n) ")
