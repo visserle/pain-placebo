@@ -11,6 +11,7 @@ from src.database.database_schema import DatabaseSchema
 DB_FILE = Path("data/pain-placebo.db")
 BACKUP_DIR = DB_FILE.parent / "backups"
 BACKUP_DIR.mkdir(exist_ok=True)
+
 logger = logging.getLogger(__name__.rsplit(".", maxsplit=1)[-1])
 
 
@@ -76,7 +77,7 @@ class DatabaseManager:
         )
 
     @property
-    def last_participant_id(self) -> int:  # keys are autoincremented and unique
+    def last_participant_id(self) -> int:  # ids are autoincremented and unique
         self.cursor.execute(
             """
             SELECT participant_id FROM Participants
@@ -86,7 +87,7 @@ class DatabaseManager:
         result = self.cursor.fetchone()
         if result is None:
             self._insert_dummy_participant_into_empty_db()
-            return 1  # autoincrement key starts at 1 (while dummy id is 0)
+            return 1  # autoincrement id starts at 1 (while dummy number is 0)
         return result[0]
 
     @property
@@ -101,7 +102,7 @@ class DatabaseManager:
         result = self.cursor.fetchone()
         if result is None:
             self._insert_dummy_participant_into_empty_db()
-            return 0  # dummy participant id
+            return 0  # dummy participant number
         return result[0]
 
     @property

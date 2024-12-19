@@ -8,8 +8,8 @@ logger = logging.getLogger(__name__.rsplit(".", maxsplit=1)[-1])
 
 def add_participant() -> int:
     with DatabaseManager() as db:
-        logging.info(f"Last participant id: {db.last_participant_number}")
-        participant_number = input("Enter new participant id: ")
+        logging.info(f"Last participant number: {db.last_participant_number}")
+        participant_number = input("Enter new participant number: ")
         participant_number = int(participant_number) if participant_number else 0
         dummy = " (dummy)" if participant_number == 0 else ""
 
