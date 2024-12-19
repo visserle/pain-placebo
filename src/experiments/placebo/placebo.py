@@ -251,7 +251,8 @@ def main():
         logging.info(
             f"Started trial ({trial + 1}/{total_trials}) with stimulus {name}."
         )
-        trial_key = db_manager.insert_trial(trial + 1, name, seed)
+        db_manager.insert_trial(trial + 1, name, seed)
+        trial_key = db_manager.last_trial_key
 
         # Start with a waiting screen for the initalization of the complex time course
         script["wait"].present()
