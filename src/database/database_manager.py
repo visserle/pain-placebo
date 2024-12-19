@@ -248,6 +248,27 @@ class DatabaseManager:
         )
         logger.debug(f"Marker '{marker}' added to the database.")
 
+    def insert_keypress(
+        self,
+        trial_id: int,
+        key: str,
+        time: float,
+        debug: bool = False,
+    ) -> None:
+        self.cursor.execute(
+            """
+            INSERT INTO Keypresses (trial_id, key_pressed, time)
+            VALUES (?, ?, ?);
+            """,
+            (
+                trial_id,
+                key,
+                time,
+            ),
+        )
+        if debug:
+            logger.debug(f"Keypress '{key}' added to the database.")
+
     def insert_questionnaire(
         self,
         scale: str,

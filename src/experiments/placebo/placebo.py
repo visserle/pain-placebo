@@ -191,6 +191,36 @@ thermoino = ThermoinoComplexTimeCourses(
 thermoino.connect()
 
 
+def check_keypresses(
+    trial_id: int,
+) -> None:
+    """Check for keypresses and log them if they occur."""
+    key = exp.keyboard.check()
+    if key is not None:
+        time = exp.clock.stopwatch_time
+        _log_keypress(trial_id, str(key), time)
+
+
+def _log_keypress(
+    trial_id: int,
+    key: int,
+    time: int,
+) -> None:
+    """
+    Log keypresses to the database.
+    """
+    try:
+        db_manager.insert_keypress(
+            trial_id=trial_id,
+            key=key,
+            time=time,
+            debug=args.debug or args.all,
+        )
+
+    except Exception as e:
+        logging.error(f"Error while logging keypress: {e}")
+
+
 def get_data_points(
     trial_id: int,
     stimulus: StimulusGenerator,
@@ -201,6 +231,10 @@ def get_data_points(
     """
     vas_slider.rate()  # slider has its own rate limiters (see VisualAnalogueScale)
     stopped_time = exp.clock.stopwatch_time
+
+    # Check for keypresses
+    check_keypresses(trial_id)
+
     if db_rate_limiter.is_allowed(stopped_time):
         index = int((stopped_time / 1000) * stimulus.sample_rate)
         index = min(index, len(stimulus.y) - 1)  # prevent index out of bounds

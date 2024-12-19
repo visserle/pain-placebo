@@ -47,6 +47,14 @@ class DatabaseSchema:
             FOREIGN KEY (trial_id) REFERENCES Trials(trial_id)
                 ON DELETE CASCADE
         );""")
+        cursor.execute("""CREATE TABLE IF NOT EXISTS Keypresses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            trial_id INTEGER NOT NULL,
+            key_pressed TEXT NOT NULL,
+            time INTEGER NOT NULL,
+            unix_time REAL DEFAULT (UNIXEPOCH('subsecond')*1000),
+            FOREIGN KEY (trial_id) REFERENCES Trials(trial_id)
+        );""")
         cursor.execute("""CREATE TABLE IF NOT EXISTS Calibration_Results (
             calibration_id INTEGER PRIMARY KEY AUTOINCREMENT,
             participant_id INTEGER,
