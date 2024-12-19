@@ -8,11 +8,10 @@ import polars as pl
 
 from src.database.database_schema import DatabaseSchema
 
-logger = logging.getLogger(__name__.rsplit(".", maxsplit=1)[-1])
-
 DB_FILE = Path("data/pain-placebo.db")
 BACKUP_DIR = DB_FILE.parent / "backups"
 BACKUP_DIR.mkdir(exist_ok=True)
+logger = logging.getLogger(__name__.rsplit(".", maxsplit=1)[-1])
 
 
 class DatabaseManager:
@@ -77,10 +76,10 @@ class DatabaseManager:
         )
 
     @property
-    def last_participant_key(self) -> int:  # keys are autoincremented and unique
+    def last_participant_id(self) -> int:  # keys are autoincremented and unique
         self.cursor.execute(
             """
-            SELECT participant_key FROM Participants
+            SELECT participant_id FROM Participants
             ORDER BY ROWID DESC LIMIT 1; -- ROWID for the last inserted row
             """
         )
@@ -91,11 +90,11 @@ class DatabaseManager:
         return result[0]
 
     @property
-    def last_participant_id(self) -> int:  # ids are given by the user
+    def last_participant_number(self) -> int:  # numbers are given by the user
         """Only used in add_participant.py."""
         self.cursor.execute(
             """
-            SELECT participant_id FROM Participants
+            SELECT participant_number FROM Participants
             ORDER BY ROWID DESC LIMIT 1;  
             """
         )
@@ -106,10 +105,10 @@ class DatabaseManager:
         return result[0]
 
     @property
-    def last_trial_key(self) -> int:
+    def last_trial_id(self) -> int:
         self.cursor.execute(
             """
-            SELECT trial_key FROM Trials
+            SELECT trial_id FROM Trials
             ORDER BY ROWID DESC LIMIT 1;
             """
         )
@@ -121,7 +120,7 @@ class DatabaseManager:
     def _insert_dummy_participant_into_empty_db(self) -> None:
         self.cursor.execute(
             """
-            INSERT INTO Participants (participant_id, comment
+            INSERT INTO Participants (participant_number, comment
             ) VALUES (0, 'Empty database: Dummy participant added.');
             """
         )
@@ -129,35 +128,37 @@ class DatabaseManager:
 
     def insert_participant(
         self,
-        participant_id: int,
+        participant_number: int,
         age: int,
         gender: str,
         comment: str | None = None,
     ) -> int:
         # Check if participant already exists
-        if not participant_id == 0:  # Dummy participant
+        if not participant_number == 0:  # Dummy participant
             result = self.conn.execute(f"""
-                SELECT COUNT(participant_id) FROM Participants
-                WHERE participant_id = {participant_id};
+                SELECT COUNT(participant_number) FROM Participants
+                WHERE participant_number = {participant_number};
             """).fetchone()[0]
             if result:
-                logger.warning(f"Participant with ID {participant_id} already exists.")
+                logger.warning(
+                    f"Participant with ID {participant_number} already exists."
+                )
 
         # Insert participant
         self.cursor.execute(
             """
-            INSERT INTO Participants (participant_id, age, gender, comment)
+            INSERT INTO Participants (participant_number, age, gender, comment)
             VALUES (?, ?, ?, ?);
             """,
             (
-                participant_id,
+                participant_number,
                 age,
                 gender,
                 comment,
             ),
         )
         # Create backup after successful insertion
-        if not participant_id == 0:  # Dummy participant
+        if not participant_number == 0:  # Dummy participant
             self.backup_database()
 
     def insert_calibration_results(
@@ -167,11 +168,11 @@ class DatabaseManager:
     ) -> None:
         self.cursor.execute(
             """
-            INSERT INTO Calibration_Results (participant_key, vas_0, vas_70)
+            INSERT INTO Calibration_Results (participant_id, vas_0, vas_70)
             VALUES (?, ?, ?);
             """,
             (
-                self.last_participant_key,
+                self.last_participant_id,
                 vas_0,
                 vas_70,
             ),
@@ -190,12 +191,12 @@ class DatabaseManager:
         """
         self.cursor.execute(
             """
-            INSERT INTO Trials (trial_number, participant_key, stimulus_name, stimulus_seed)
+            INSERT INTO Trials (trial_number, participant_id, stimulus_name, stimulus_seed)
             VALUES (?, ?, ?, ?);
             """,
             (
                 trial_number,
-                self.last_participant_key,
+                self.last_participant_id,
                 stimulus_name,
                 stimulus_seed,
             ),
@@ -204,7 +205,7 @@ class DatabaseManager:
 
     def insert_data_point(
         self,
-        trial_key: int,
+        trial_id: int,
         temperature: float,
         rating: float,
         time: float,
@@ -212,11 +213,11 @@ class DatabaseManager:
     ) -> None:
         self.cursor.execute(
             """
-            INSERT INTO Data_Points (trial_key, temperature, rating, time)
+            INSERT INTO Data_Points (trial_id, temperature, rating, time)
             VALUES (?, ?, ?, ?);
             """,
             (
-                trial_key,  # no self.current_trial_key to avoid unnecessary queries
+                trial_id,  # no self.current_trial_id to avoid unnecessary queries
                 temperature,
                 rating,
                 time,
@@ -229,17 +230,17 @@ class DatabaseManager:
 
     def insert_marker(
         self,
-        trial_key: int,
+        trial_id: int,
         marker: str,
         time: float,
     ) -> None:
         self.cursor.execute(
             """
-            INSERT INTO Markers (trial_key, marker, time)
+            INSERT INTO Markers (trial_id, marker, time)
             VALUES (?, ?, ?);
             """,
             (
-                trial_key,
+                trial_id,
                 marker,
                 time,
             ),
@@ -254,11 +255,11 @@ class DatabaseManager:
         scale = scale.replace("-", "_")
         self.cursor.execute(
             f"""
-            INSERT INTO Questionnaire_{scale.upper()} (participant_key, {', '.join(results.keys())})
+            INSERT INTO Questionnaire_{scale.upper()} (participant_id, {', '.join(results.keys())})
             VALUES (?, {', '.join('?' for _ in results)});
             """,
             (
-                self.last_participant_key,
+                self.last_participant_id,
                 *results.values(),
             ),
         )
@@ -278,7 +279,7 @@ class DatabaseManager:
             self.cursor.execute(
                 """
                 DELETE FROM Participants
-                WHERE participant_id = ?;
+                WHERE participant_number = ?;
                 """,
                 (id,),
             )
@@ -291,27 +292,6 @@ class DatabaseManager:
 
     def remove_dummy_participant(self) -> None:
         self.remove_participant(0)
-
-    def anonymize_database(self) -> None:
-        input_ = input(f"Anonymize database {DB_FILE}? (y/n) ")
-        if input_.lower() != "y":
-            logger.info("Database anonymization cancelled.")
-            return
-        # TODO: remove timestamps / unix_time and scramble participant ids
-        logging.info("Anonymizing database not implemented yet.")
-
-    def delete_database(self) -> None:
-        input_ = input(f"Delete database {DB_FILE}? (y/n) ")
-        if input_.lower() != "y":
-            logger.info("Database deletion cancelled.")
-            return
-
-        if DB_FILE.exists():
-            self.disconnect()
-            DB_FILE.unlink()
-            logger.info(f"Database {DB_FILE} deleted.")
-        else:
-            logger.error(f"Database {DB_FILE} does not exist.")
 
     def backup_database(self) -> None:
         """Create a backup of the database."""
@@ -333,6 +313,14 @@ class DatabaseManager:
 
         except Exception as e:
             logger.error(f"Backup failed: {e}")
+
+    def anonymize_database(self) -> None:
+        input_ = input(f"Anonymize database {DB_FILE}? (y/n) ")
+        if input_.lower() != "y":
+            logger.info("Database anonymization cancelled.")
+            return
+        # TODO: remove comments, timestamps / unix_time and scramble participant ids
+        logging.info("Anonymizing database not implemented yet.")
 
 
 if __name__ == "__main__":

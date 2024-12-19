@@ -113,7 +113,7 @@ else:
 # Prepare to database
 db_manager = DatabaseManager()
 with db_manager:
-    participant_id = db_manager.last_participant_id
+    participant_number = db_manager.last_participant_number
 
 db_rate_limiter = RateLimiter(rate=config["database"]["rate_limit"], use_intervals=True)
 
@@ -159,7 +159,7 @@ db_rate_limiter = RateLimiter(rate=config["database"]["rate_limit"], use_interva
 #     )
 
 # determine order of skin areas based on participant ID
-id_is_odd = int(participant_id) % 2
+id_is_odd = int(participant_number) % 2
 skin_areas = range(1, 7) if id_is_odd else range(6, 0, -1)
 logging.info(f"Start with skin area {skin_areas[0]}.")
 # update config with calibration data
@@ -192,7 +192,7 @@ thermoino.connect()
 
 
 def get_data_points(
-    trial_key: int,
+    trial_id: int,
     stimulus: StimulusGenerator,
 ) -> None:
     """
@@ -205,7 +205,7 @@ def get_data_points(
         index = int((stopped_time / 1000) * stimulus.sample_rate)
         index = min(index, len(stimulus.y) - 1)  # prevent index out of bounds
         db_manager.insert_data_point(
-            trial_key=trial_key,
+            trial_id=trial_id,
             time=stopped_time,
             temperature=stimulus.y[index],
             rating=vas_slider.rating,
@@ -215,7 +215,7 @@ def get_data_points(
 
 def main():
     # Start experiment
-    control.start(skip_ready_screen=True, subject_id=participant_id)
+    control.start(skip_ready_screen=True, subject_id=participant_number)
     logging.info(
         f"Started measurement with seed order {stimulus_config['stimulus']['seeds']}."
     )
@@ -252,7 +252,7 @@ def main():
             f"Started trial ({trial + 1}/{total_trials}) with stimulus {name}."
         )
         db_manager.insert_trial(trial + 1, name, seed)
-        trial_key = db_manager.last_trial_key
+        trial_id = db_manager.last_trial_id
 
         # Start with a waiting screen for the initalization of the complex time course
         script["wait"].present()
@@ -279,7 +279,7 @@ def main():
         logging.info("Stimulus started.")
         exp.clock.wait_seconds(
             stimulus.duration,
-            callback_function=lambda: get_data_points(trial_key, stimulus),
+            callback_function=lambda: get_data_points(trial_id, stimulus),
         )
         # add marker for stimulus end here
         logging.info("Stimulus ended.")
@@ -298,7 +298,7 @@ def main():
         )
 
         # Log data
-        query = f"SELECT * FROM Data_Points WHERE trial_key = {trial_key};"
+        query = f"SELECT * FROM Data_Points WHERE trial_id = {trial_id};"
         df = pl.read_database(query, db_manager.conn)
         logging.info(
             f"Rating of the stimulus: "

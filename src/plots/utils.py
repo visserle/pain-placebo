@@ -52,7 +52,7 @@ def prepare_multiline_hvplot(
     info_columns = [
         "trial_id",
         "trial_number",
-        "participant_id",
+        "participant_number",
         "stimulus_seed",
         "trial_specific_interval_id",  # TODO: remove
         "continuous_interval_id",

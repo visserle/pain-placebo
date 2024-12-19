@@ -149,7 +149,7 @@ def plot_correlations_by_trial(
     df: pl.DataFrame,
     correlation_column: str,
     trial_column: str = "trial_id",
-    participant_column: str = "participant_id",
+    participant_column: str = "participant_number",
     title: str = None,
     width: int = 800,
     height: int = 400,

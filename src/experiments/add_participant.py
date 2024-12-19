@@ -8,10 +8,10 @@ logger = logging.getLogger(__name__.rsplit(".", maxsplit=1)[-1])
 
 def add_participant() -> int:
     with DatabaseManager() as db:
-        logging.info(f"Last participant id: {db.last_participant_id}")
-        participant_id = input("Enter new participant id: ")
-        participant_id = int(participant_id) if participant_id else 0
-        dummy = " (dummy)" if participant_id == 0 else ""
+        logging.info(f"Last participant id: {db.last_participant_number}")
+        participant_number = input("Enter new participant id: ")
+        participant_number = int(participant_number) if participant_number else 0
+        dummy = " (dummy)" if participant_number == 0 else ""
 
         # Ask for age and gender if the participant is not a dummy
         if not dummy:
@@ -23,13 +23,13 @@ def add_participant() -> int:
         comment = input("Enter comment (optional): ")
 
         db.insert_participant(
-            participant_id=participant_id,
+            participant_number=participant_number,
             age=age,
             gender=gender,
             comment=comment,
         )
 
-    logger.info(f"Participant {participant_id}{dummy} added to the database.")
+    logger.info(f"Participant {participant_number}{dummy} added to the database.")
     logger.debug(f"Age: {age}")
     logger.debug(f"Gender: {gender}")
     if comment:
@@ -57,5 +57,5 @@ def _get_valid_gender() -> str:
 
 if __name__ == "__main__":
     configure_logging(stream_level=logging.DEBUG)
-    participant_key = add_participant()
-    print(f"Participant key: {participant_key}")
+    participant_id = add_participant()
+    print(f"Participant key: {participant_id}")

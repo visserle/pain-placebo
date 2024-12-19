@@ -118,8 +118,8 @@ if args.dummy_stimulus:
 
 # Perpare experiment
 with DatabaseManager() as db_manager:
-    participant_id = db_manager.last_participant_id
-id_is_odd = participant_id % 2  # determine skin area for calibration
+    participant_number = db_manager.last_participant_number
+id_is_odd = participant_number % 2  # determine skin area for calibration
 skind_areas = range(1, 7) if id_is_odd else range(6, 0, -1)
 logging.info(f"Use skin area {skind_areas[-2]} for calibration.")
 ask_for_calibration_start()  # pop-up window
@@ -223,7 +223,7 @@ def run_estimation_trials(estimator: BayesianEstimatorVAS) -> None:
 
 def main():
     # Start experiment
-    control.start(skip_ready_screen=True, subject_id=participant_id)
+    control.start(skip_ready_screen=True, subject_id=participant_number)
     logging.info("Started calibration.")
 
     # Introduction

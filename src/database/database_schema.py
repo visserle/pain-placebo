@@ -5,8 +5,8 @@ class DatabaseSchema:
     @staticmethod
     def initialize_tables(cursor: sqlite3.Cursor) -> None:
         cursor.execute("""CREATE TABLE IF NOT EXISTS Participants (
-            participant_key INTEGER PRIMARY KEY AUTOINCREMENT,
-            participant_id INTEGER NOT NULL,
+            participant_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            participant_number INTEGER NOT NULL,
             age INTEGER,
             gender TEXT,
             comment TEXT,
@@ -16,53 +16,52 @@ class DatabaseSchema:
             unix_time REAL DEFAULT (UNIXEPOCH('subsecond')*1000)
         );""")
         cursor.execute("""CREATE TABLE IF NOT EXISTS Trials (
-            trial_key INTEGER PRIMARY KEY AUTOINCREMENT,
-            participant_key INTEGER,
+            trial_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            participant_id INTEGER,
             trial_number INTEGER,
             stimulus_name TEXT,
-            stimulus_id INTEGER,
             stimulus_seed INTEGER,
             -- stimulus_config TEXT, # TODO: maybe add this column back
             is_excluded BOOLEAN DEFAULT FALSE,
             excluded_reason TEXT,
             unix_time REAL DEFAULT (UNIXEPOCH('subsecond')*1000),
-            FOREIGN KEY (participant_key) REFERENCES Participants(participant_key)
+            FOREIGN KEY (participant_id) REFERENCES Participants(participant_id)
                 ON DELETE CASCADE
         );""")
         cursor.execute("""CREATE TABLE IF NOT EXISTS Markers (
             marker_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            trial_key INTEGER,
+            trial_id INTEGER,
             marker TEXT,
             time REAL,
             unix_time REAL DEFAULT (UNIXEPOCH('subsecond')*1000),
-            FOREIGN KEY (trial_key) REFERENCES Trials(trial_key)
+            FOREIGN KEY (trial_id) REFERENCES Trials(trial_id)
                 ON DELETE CASCADE
         );""")
         cursor.execute("""CREATE TABLE IF NOT EXISTS Data_Points (
             data_point_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            trial_key INTEGER,
+            trial_id INTEGER,
             temperature REAL,
             rating REAL,
             time REAL,
             unix_time REAL DEFAULT (UNIXEPOCH('subsecond')*1000),
-            FOREIGN KEY (trial_key) REFERENCES Trials(trial_key)
+            FOREIGN KEY (trial_id) REFERENCES Trials(trial_id)
                 ON DELETE CASCADE
         );""")
         cursor.execute("""CREATE TABLE IF NOT EXISTS Calibration_Results (
             calibration_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            participant_key INTEGER,
+            participant_id INTEGER,
             vas_0 REAL,
             vas_70 REAL,
             unix_time REAL DEFAULT (UNIXEPOCH('subsecond')*1000),
-            FOREIGN KEY (participant_key) REFERENCES Participants(participant_key)
+            FOREIGN KEY (participant_id) REFERENCES Participants(participant_id)
                 ON DELETE CASCADE
         );""")
         cursor.execute("""CREATE TABLE IF NOT EXISTS Placebo_Results (
             placebo_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            participant_key INTEGER,
+            participant_id INTEGER,
             -- TODO: Add columns for placebo results here 
             unix_time REAL DEFAULT (UNIXEPOCH('subsecond')*1000),
-            FOREIGN KEY (participant_key) REFERENCES Participants(participant_key)
+            FOREIGN KEY (participant_id) REFERENCES Participants(participant_id)
                 ON DELETE CASCADE
         );""")  # TODO: Add columns for placebo results here
         DatabaseSchema._init_questionnaire_tables(cursor)
@@ -71,7 +70,7 @@ class DatabaseSchema:
     def _init_questionnaire_tables(cursor: sqlite3.Cursor) -> None:
         cursor.execute("""CREATE TABLE IF NOT EXISTS Questionnaire_General (
             general_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            participant_key INTEGER,
+            participant_id INTEGER,
             gender TEXT,
             height REAL,
             weight REAL,
@@ -85,12 +84,12 @@ class DatabaseSchema:
             regular_medication TEXT,
             pain_medication_last_24h TEXT,
             unix_time REAL DEFAULT (UNIXEPOCH('subsecond')*1000),
-            FOREIGN KEY (participant_key) REFERENCES Participants(participant_key)
+            FOREIGN KEY (participant_id) REFERENCES Participants(participant_id)
                 ON DELETE CASCADE
         );""")
         cursor.execute("""CREATE TABLE IF NOT EXISTS Questionnaire_BDI_II (
             bdi_ii_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            participant_key INTEGER,
+            participant_id INTEGER,
             total INTEGER,
             q1 INTEGER,
             q2 INTEGER,
@@ -114,12 +113,12 @@ class DatabaseSchema:
             q20 INTEGER,
             q21 INTEGER,
             unix_time REAL DEFAULT (UNIXEPOCH('subsecond')*1000),
-            FOREIGN KEY (participant_key) REFERENCES Participants(participant_key)
+            FOREIGN KEY (participant_id) REFERENCES Participants(participant_id)
                 ON DELETE CASCADE
         );""")
         cursor.execute("""CREATE TABLE IF NOT EXISTS Questionnaire_MAAS (
             maas_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            participant_key INTEGER,
+            participant_id INTEGER,
             total INTEGER,
             q1 INTEGER,
             q2 INTEGER,
@@ -137,12 +136,12 @@ class DatabaseSchema:
             q14 INTEGER,
             q15 INTEGER,
             unix_time REAL DEFAULT (UNIXEPOCH('subsecond')*1000),
-            FOREIGN KEY (participant_key) REFERENCES Participants(participant_key)
+            FOREIGN KEY (participant_id) REFERENCES Participants(participant_id)
                 ON DELETE CASCADE
         );""")
         cursor.execute("""CREATE TABLE IF NOT EXISTS Questionnaire_PANAS (
             panas_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            participant_key INTEGER,
+            participant_id INTEGER,
             positive_affect INTEGER,
             negative_affect INTEGER,
             q1 INTEGER,
@@ -166,12 +165,12 @@ class DatabaseSchema:
             q19 INTEGER,
             q20 INTEGER,
             unix_time REAL DEFAULT (UNIXEPOCH('subsecond')*1000),
-            FOREIGN KEY (participant_key) REFERENCES Participants(participant_key)
+            FOREIGN KEY (participant_id) REFERENCES Participants(participant_id)
                 ON DELETE CASCADE
         );""")
         cursor.execute("""CREATE TABLE IF NOT EXISTS Questionnaire_PCS (
             pcs_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            participant_key INTEGER,
+            participant_id INTEGER,
             total INTEGER,
             rumination_score INTEGER,
             magnification_score INTEGER,
@@ -190,12 +189,12 @@ class DatabaseSchema:
             q12 INTEGER,
             q13 INTEGER,
             unix_time REAL DEFAULT (UNIXEPOCH('subsecond')*1000),
-            FOREIGN KEY (participant_key) REFERENCES Participants(participant_key)
+            FOREIGN KEY (participant_id) REFERENCES Participants(participant_id)
                 ON DELETE CASCADE
         );""")
         cursor.execute("""CREATE TABLE IF NOT EXISTS Questionnaire_PHQ_15 (
             phq_15_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            participant_key INTEGER,
+            participant_id INTEGER,
             total INTEGER,
             q1 INTEGER,
             q2 INTEGER,
@@ -213,12 +212,12 @@ class DatabaseSchema:
             q14 INTEGER,
             q15 INTEGER,
             unix_time REAL DEFAULT (UNIXEPOCH('subsecond')*1000),
-            FOREIGN KEY (participant_key) REFERENCES Participants(participant_key)
+            FOREIGN KEY (participant_id) REFERENCES Participants(participant_id)
                 ON DELETE CASCADE
         );""")
         cursor.execute("""CREATE TABLE IF NOT EXISTS Questionnaire_PVAQ (
             pvaq_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            participant_key INTEGER,
+            participant_id INTEGER,
             total INTEGER,
             attention_to_pain_score INTEGER,
             attention_to_changes_score INTEGER,
@@ -239,12 +238,12 @@ class DatabaseSchema:
             q15 INTEGER,
             q16 INTEGER,
             unix_time REAL DEFAULT (UNIXEPOCH('subsecond')*1000),
-            FOREIGN KEY (participant_key) REFERENCES Participants(participant_key)
+            FOREIGN KEY (participant_id) REFERENCES Participants(participant_id)
                 ON DELETE CASCADE
         );""")
         cursor.execute("""CREATE TABLE IF NOT EXISTS Questionnaire_STAI_T_10 (
             stai_t_10_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            participant_key INTEGER,
+            participant_id INTEGER,
             total INTEGER,
             q1 INTEGER,
             q2 INTEGER,
@@ -257,6 +256,6 @@ class DatabaseSchema:
             q9 INTEGER,
             q10 INTEGER,
             unix_time REAL DEFAULT (UNIXEPOCH('subsecond')*1000),
-            FOREIGN KEY (participant_key) REFERENCES Participants(participant_key)
+            FOREIGN KEY (participant_id) REFERENCES Participants(participant_id)
                 ON DELETE CASCADE
         );""")
