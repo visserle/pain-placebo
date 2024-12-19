@@ -76,7 +76,6 @@ configure_logging(
     file_path=LOG_FILE,
 )
 
-
 # Load scripts and configurations
 script = load_script(EXP_DIR / "placebo_script.yaml")
 config = load_configuration(EXP_DIR / "placebo_config.toml")
@@ -111,17 +110,12 @@ if args.dummy_stimulus:
 else:
     stimulus_config.pop("dummy", None)
 
-
-# Connect to database
+# Prepare to database
 db_manager = DatabaseManager()
+with db_manager:
+    participant_id = db_manager.last_participant_id
+
 db_rate_limiter = RateLimiter(rate=config["database"]["rate_limit"], use_intervals=True)
-participant_key, participant_id = (
-    db_manager.last_participant_key,
-    db_manager.last_participant_id,
-)
-
-participant_info = {"id": db_manager.last_participant_id}
-
 
 # # Load participant info and update stimulus config with calibration data
 # participant_info = read_last_participant(CALIBRATION_RESULTS)
@@ -165,11 +159,11 @@ participant_info = {"id": db_manager.last_participant_id}
 #     )
 
 # determine order of skin areas based on participant ID
-id_is_odd = int(participant_info["id"]) % 2
+id_is_odd = int(participant_id) % 2
 skin_areas = range(1, 7) if id_is_odd else range(6, 0, -1)
 logging.info(f"Start with skin area {skin_areas[0]}.")
 # update config with calibration data
-config["stimulus"] |= participant_info
+# config["stimulus"] |= participant_info
 # shuffle seeds for randomization
 random.shuffle(config["stimulus"]["seeds"])
 
@@ -251,6 +245,8 @@ def main():
     correlations = []  # between temperature and rating
     reward = 0.0
     for trial, seed in enumerate(stimulus_config["stimulus"]["seeds"]):
+        db_manager.connect()
+
         name = "TODO"  # TODO: add name for placebo vs no placebo, etc.
         logging.info(
             f"Started trial ({trial + 1}/{total_trials}) with stimulus {name}."
@@ -310,6 +306,7 @@ def main():
             f"mean = {int(df['rating'].mean())}, "
             f"std = {int(df['rating'].std())}."
         )
+        db_manager.disconnect()
 
         # Next trial
         if trial == total_trials - 1:
@@ -323,7 +320,7 @@ def main():
         script["approve"].present()
         exp.keyboard.wait(K_SPACE)
 
-    # # Save participant data
+    # Save participant data
     # participant_info_ = read_last_participant()  # reload to remove calibration data
     # participant_info_["readjustment"] = readjustment
     # participant_info_["seed_order"] = config["stimulus"]["seeds"]
