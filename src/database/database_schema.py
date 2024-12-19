@@ -5,12 +5,14 @@ class DatabaseSchema:
     @staticmethod
     def initialize_tables(cursor: sqlite3.Cursor) -> None:
         cursor.execute("""CREATE TABLE IF NOT EXISTS Participants (
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
             participant_key INTEGER PRIMARY KEY AUTOINCREMENT,
             participant_id INTEGER NOT NULL,
-            gender TEXT,
             age INTEGER,
+            gender TEXT,
             comment TEXT,
+            is_excluded BOOLEAN DEFAULT FALSE,
+            excluded_reason TEXT,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
             unix_time REAL DEFAULT (UNIXEPOCH('subsecond')*1000)
         );""")
         cursor.execute("""CREATE TABLE IF NOT EXISTS Trials (
@@ -21,6 +23,8 @@ class DatabaseSchema:
             stimulus_id INTEGER,
             stimulus_seed INTEGER,
             -- stimulus_config TEXT, # TODO: maybe add this column back
+            is_excluded BOOLEAN DEFAULT FALSE,
+            excluded_reason TEXT,
             unix_time REAL DEFAULT (UNIXEPOCH('subsecond')*1000),
             FOREIGN KEY (participant_key) REFERENCES Participants(participant_key)
                 ON DELETE CASCADE
@@ -28,8 +32,8 @@ class DatabaseSchema:
         cursor.execute("""CREATE TABLE IF NOT EXISTS Markers (
             marker_id INTEGER PRIMARY KEY AUTOINCREMENT,
             trial_key INTEGER,
-            time REAL,
             marker TEXT,
+            time REAL,
             unix_time REAL DEFAULT (UNIXEPOCH('subsecond')*1000),
             FOREIGN KEY (trial_key) REFERENCES Trials(trial_key)
                 ON DELETE CASCADE
@@ -37,9 +41,9 @@ class DatabaseSchema:
         cursor.execute("""CREATE TABLE IF NOT EXISTS Data_Points (
             data_point_id INTEGER PRIMARY KEY AUTOINCREMENT,
             trial_key INTEGER,
-            time REAL,
             temperature REAL,
             rating REAL,
+            time REAL,
             unix_time REAL DEFAULT (UNIXEPOCH('subsecond')*1000),
             FOREIGN KEY (trial_key) REFERENCES Trials(trial_key)
                 ON DELETE CASCADE
@@ -190,7 +194,7 @@ class DatabaseSchema:
                 ON DELETE CASCADE
         );""")
         cursor.execute("""CREATE TABLE IF NOT EXISTS Questionnaire_PHQ_15 (
-            phq15_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            phq_15_id INTEGER PRIMARY KEY AUTOINCREMENT,
             participant_key INTEGER,
             total INTEGER,
             q1 INTEGER,
