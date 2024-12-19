@@ -15,8 +15,8 @@ def add_participant() -> int:
 
         # Ask for age and gender if the participant is not a dummy
         if not dummy:
-            gender = _get_valid_gender()
             age = _get_valid_age()
+            gender = _get_valid_gender()
         else:
             age = 20
             gender = "f"
@@ -24,8 +24,8 @@ def add_participant() -> int:
 
         db.insert_participant(
             participant_id=participant_id,
-            gender=gender,
             age=age,
+            gender=gender,
             comment=comment,
         )
 
@@ -48,10 +48,10 @@ def _get_valid_age() -> int:
 
 def _get_valid_gender() -> str:
     """Get and validate participant gender."""
-    gender = input("Enter gender (f/m): ")
-    while gender not in ["f", "m"]:
-        logger.error("Gender must be 'f' or 'm'.")
-        gender = input("Enter gender (f/m): ")
+    gender = input("Enter gender (m/f/d): ")
+    while gender not in ["m", "f", "d"]:
+        logger.error("Gender must be 'm', 'f' or 'd'.")
+        gender = input("Enter gender (m/f/d): ")
     return gender
 
 
