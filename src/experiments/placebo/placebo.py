@@ -191,56 +191,36 @@ thermoino = ThermoinoComplexTimeCourses(
 thermoino.connect()
 
 
-def check_keypresses(
-    trial_id: int,
-) -> None:
-    """Check for keypresses and log them if they occur."""
-    key = exp.keyboard.check()
-    if key is not None:
-        time = exp.clock.stopwatch_time
-        _log_keypress(trial_id, str(key), time)
-
-
-def _log_keypress(
-    trial_id: int,
-    key: int,
-    time: int,
-) -> None:
-    """
-    Log keypresses to the database.
-    """
-    try:
-        db_manager.insert_keypress(
-            trial_id=trial_id,
-            key=key,
-            time=time,
-            debug=args.debug or args.all,
-        )
-
-    except Exception as e:
-        logging.error(f"Error while logging keypress: {e}")
-
-
-def get_data_points(
+def callback_function(
     trial_id: int,
     stimulus: StimulusGenerator,
 ) -> None:
     """
-    Get rating and temperature data points and send them to the db (runs rate-limited in
-    the callback).
+    Callback function for the trial loop.
     """
     vas_slider.rate()  # slider has its own rate limiters (see VisualAnalogueScale)
-    stopped_time = exp.clock.stopwatch_time
+    time = exp.clock.stopwatch_time
 
-    # Check for keypresses
-    check_keypresses(trial_id)
+    # Insert keypresses
+    key = exp.keyboard.check()
+    if key is not None:
+        try:
+            db_manager.insert_keypress(
+                trial_id=trial_id,
+                key=key,
+                time=time,
+                debug=args.debug or args.all,
+            )
+        except Exception as e:
+            logging.error(f"Error while logging keypress: {e}")
 
-    if db_rate_limiter.is_allowed(stopped_time):
-        index = int((stopped_time / 1000) * stimulus.sample_rate)
+    # Insert data points
+    if db_rate_limiter.is_allowed(time):
+        index = int((time / 1000) * stimulus.sample_rate)
         index = min(index, len(stimulus.y) - 1)  # prevent index out of bounds
         db_manager.insert_data_point(
             trial_id=trial_id,
-            time=stopped_time,
+            time=time,
             temperature=stimulus.y[index],
             rating=vas_slider.rating,
             debug=args.debug or args.all,
@@ -299,7 +279,7 @@ def main():
 
         # Present the VAS slider and wait for the temperature to ramp up
         time_to_ramp_up = thermoino.prep_ctc()
-        # add marker for preparation here
+        db_manager.insert_marker("thermode_ramp_up", trial_id, exp.clock.stopwatch_time)
         exp.clock.wait_seconds(
             time_to_ramp_up + 1.5,  # give participant time to prepare
             callback_function=lambda: vas_slider.rate(),  # lamdba needed for callback
@@ -307,15 +287,15 @@ def main():
 
         # Measure temperature and rating
         thermoino.exec_ctc()
+        logging.info("Stimulus started.")
+        db_manager.insert_marker("stimulus_start", trial_id, exp.clock.stopwatch_time)
         db_rate_limiter.reset()
         exp.clock.reset_stopwatch()  # needed for the callback
-        # add marker for stimulus start here
-        logging.info("Stimulus started.")
         exp.clock.wait_seconds(
             stimulus.duration,
-            callback_function=lambda: get_data_points(trial_id, stimulus),
+            callback_function=lambda: callback_function(trial_id, stimulus),
         )
-        # add marker for stimulus end here
+        db_manager.insert_marker("stimulus_end", trial_id, exp.clock.stopwatch_time)
         logging.info("Stimulus ended.")
 
         # Add delay at the end of the complex time course (see thermoino.py)
@@ -326,9 +306,14 @@ def main():
         exp.clock.wait_seconds(
             time_to_ramp_down, callback_function=lambda: vas_slider.rate()
         )
-        # add marker for ramp down here
+        db_manager.insert_marker(
+            "thermode_ramp_down", trial_id, exp.clock.stopwatch_time
+        )
         logging.info(
             f"Finished trial ({trial + 1}/{total_trials}) with stimulus {name}."
+        )
+        db_manager.insert_marker(
+            "thermode_baseline", trial_id, exp.clock.stopwatch_time
         )
 
         # Log data

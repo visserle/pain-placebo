@@ -226,13 +226,13 @@ class DatabaseManager:
         )
         if debug:
             logger.debug(
-                f"Data point added to the database: {temperature=}, {rating=}, {time=}"
+                f"Data point added to the database: {temperature = }, {rating = }, {time = }"
             )
 
     def insert_marker(
         self,
-        trial_id: int,
         marker: str,
+        trial_id: int,
         time: float,
     ) -> None:
         self.cursor.execute(
@@ -246,7 +246,7 @@ class DatabaseManager:
                 time,
             ),
         )
-        logger.debug(f"Marker '{marker}' added to the database.")
+        logger.debug(f"Marker added to the database: {marker}")
 
     def insert_keypress(
         self,
