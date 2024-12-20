@@ -26,10 +26,7 @@ from src.log_config import configure_logging
 
 EXP_NAME = "calibration"
 EXP_DIR = Path("src/experiments/calibration")
-RESULTS_FILE = Path("data/experiments/calibration_results.csv")
-LOG_FILE = Path("runs/experiments/calibration") / datetime.now().strftime(
-    "%Y_%m_%d__%H_%M_%S.log"
-)
+LOG_FILE = Path("log/calibration") / datetime.now().strftime("%Y_%m_%d__%H_%M_%S.log")
 
 
 # Parse arguments

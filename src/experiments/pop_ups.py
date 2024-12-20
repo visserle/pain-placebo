@@ -7,7 +7,7 @@ import logging
 import tkinter as tk
 from tkinter import messagebox, ttk
 
-from src.experiments.utils import center_tk_window
+from screeninfo import get_monitors
 
 logger = logging.getLogger(__name__.rsplit(".", maxsplit=1)[-1])
 
@@ -47,7 +47,7 @@ def _start_window(items: list[str], title: str) -> bool:
     root = tk.Tk()
     root.withdraw()
     dialog = ChecklistDialog(root, items)
-    center_tk_window(root)
+    _center_tk_window(root)
     response = dialog.show()
     logger.debug(
         f"Confirmation for {title} start {'recieved' if response else 'denied'}."
@@ -101,35 +101,33 @@ class ChecklistDialog:
         return self.response
 
 
-def ask_for_eyetracker_calibration() -> bool:
-    user_choice = {"proceed": False}  # Dictionary to store user's choice
+def _center_tk_window(
+    window: tk.Tk,
+    primary_screen: bool = False,
+) -> None:
+    """
+    Center a window, by default on the first available non-primary screen if available,
+    otherwise on the primary screen.
+    """
+    # Get sorted list of monitors
+    monitors = sorted(get_monitors(), key=lambda m: m.is_primary)
+    # non-primary monitor comes first (False < True)
+    monitor = monitors[0] if not primary_screen else monitors[-1]
 
-    def on_proceed():
-        user_choice["proceed"] = True
-        root.destroy()
+    # Get window size
+    window.update_idletasks()
+    window_width = window.winfo_width()
+    window_height = window.winfo_height()
 
-    root = tk.Tk()
-    root.withdraw()
-    root.title("iMotions")
+    # Calculate center coordinates
+    center_x = int(monitor.x + (monitor.width / 2 - window_width / 2))
+    center_y = int(monitor.y + (monitor.height / 2 - window_height / 2))
 
-    label = tk.Label(root, text="Kalibrierung für Eye-Tracking starten?")
-    label.pack(pady=10, padx=10)
-
-    proceed_button = tk.Button(root, text="Start", command=on_proceed)
-    proceed_button.pack(pady=10, padx=10)
-    center_tk_window(root)
-    root.deiconify()
-    root.mainloop()
-
-    logger.debug(
-        "Confirmation for eye-tracker calibration "
-        f"{'recieved' if user_choice['proceed'] else 'denied'}."
-    )
-    return user_choice["proceed"]
+    # Move window to the center of the chosen monitor
+    window.geometry(f"+{center_x}+{center_y}")
 
 
 if __name__ == "__main__":
     # Set basic configuration for the logger
     logging.basicConfig(level=logging.DEBUG, format="%(levelname)s: %(message)s")
-    # ask_for_calibration_start()
-    ask_for_eyetracker_calibration()
+    ask_for_calibration_start()
