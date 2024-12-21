@@ -21,7 +21,6 @@ class DatabaseSchema:
             trial_number INTEGER,
             stimulus_name TEXT,
             stimulus_seed INTEGER,
-            -- stimulus_config TEXT, # TODO: maybe add this column back
             is_excluded BOOLEAN DEFAULT FALSE,
             excluded_reason TEXT,
             unix_time REAL DEFAULT (UNIXEPOCH('subsecond')*1000),
@@ -29,7 +28,6 @@ class DatabaseSchema:
                 ON DELETE CASCADE
         );""")
         cursor.execute("""CREATE TABLE IF NOT EXISTS Markers (
-            marker_id INTEGER PRIMARY KEY AUTOINCREMENT,
             trial_id INTEGER,
             marker TEXT,
             time REAL,
@@ -37,8 +35,7 @@ class DatabaseSchema:
             FOREIGN KEY (trial_id) REFERENCES Trials(trial_id)
                 ON DELETE CASCADE
         );""")
-        cursor.execute("""CREATE TABLE IF NOT EXISTS Data_Points (
-            data_point_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        cursor.execute("""CREATE TABLE IF NOT EXISTS Measurements (
             trial_id INTEGER,
             temperature REAL,
             rating REAL,
@@ -47,11 +44,10 @@ class DatabaseSchema:
             FOREIGN KEY (trial_id) REFERENCES Trials(trial_id)
                 ON DELETE CASCADE
         );""")
-        cursor.execute("""CREATE TABLE IF NOT EXISTS Keypresses (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            trial_id INTEGER NOT NULL,
-            key_pressed TEXT NOT NULL,
-            time INTEGER NOT NULL,
+        cursor.execute("""CREATE TABLE IF NOT EXISTS Buttons (
+            trial_id INTEGER,
+            button TEXT,
+            time INTEGER,
             unix_time REAL DEFAULT (UNIXEPOCH('subsecond')*1000),
             FOREIGN KEY (trial_id) REFERENCES Trials(trial_id)
         );""")
@@ -74,7 +70,7 @@ class DatabaseSchema:
         );""")  # TODO: Add columns for placebo results here
         DatabaseSchema._init_questionnaire_tables(cursor)
 
-    @staticmethod  # TODO add result from scoring schema
+    @staticmethod
     def _init_questionnaire_tables(cursor: sqlite3.Cursor) -> None:
         cursor.execute("""CREATE TABLE IF NOT EXISTS Questionnaire_General (
             general_id INTEGER PRIMARY KEY AUTOINCREMENT,
