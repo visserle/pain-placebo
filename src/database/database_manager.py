@@ -204,35 +204,10 @@ class DatabaseManager:
         )
         logger.debug(f"Trial {trial_number} added to the database.")
 
-    def insert_data_point(
-        self,
-        trial_id: int,
-        temperature: float,
-        rating: float,
-        time: float,
-        debug: bool = False,
-    ) -> None:
-        self.cursor.execute(
-            """
-            INSERT INTO Data_Points (trial_id, temperature, rating, time)
-            VALUES (?, ?, ?, ?);
-            """,
-            (
-                trial_id,  # no self.current_trial_id to avoid unnecessary queries
-                temperature,
-                rating,
-                time,
-            ),
-        )
-        if debug:
-            logger.debug(
-                f"Data point added to the database: {temperature = }, {rating = }, {time = }"
-            )
-
     def insert_marker(
         self,
-        marker: str,
         trial_id: int,
+        marker: str,
         time: float,
     ) -> None:
         self.cursor.execute(
@@ -248,7 +223,32 @@ class DatabaseManager:
         )
         logger.debug(f"Marker added to the database: {marker}")
 
-    def insert_keypress(
+    def insert_measurement(
+        self,
+        trial_id: int,
+        temperature: float,
+        rating: float,
+        time: float,
+        debug: bool = False,
+    ) -> None:
+        self.cursor.execute(
+            """
+            INSERT INTO Measurements (trial_id, temperature, rating, time)
+            VALUES (?, ?, ?, ?);
+            """,
+            (
+                trial_id,  # no self.current_trial_id to avoid unnecessary queries
+                temperature,
+                rating,
+                time,
+            ),
+        )
+        if debug:
+            logger.debug(
+                f"Data point added to the database: {temperature = }, {rating = }, {time = }"
+            )
+
+    def insert_button(
         self,
         trial_id: int,
         key: str,
@@ -257,7 +257,7 @@ class DatabaseManager:
     ) -> None:
         self.cursor.execute(
             """
-            INSERT INTO Keypresses (trial_id, key_pressed, time)
+            INSERT INTO Keypresses (trial_id, button, time)
             VALUES (?, ?, ?);
             """,
             (

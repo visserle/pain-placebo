@@ -201,24 +201,24 @@ def callback_function(
     vas_slider.rate()  # slider has its own rate limiters (see VisualAnalogueScale)
     time = exp.clock.stopwatch_time
 
-    # Insert keypresses
-    key = exp.keyboard.check()
-    if key is not None:
+    # Insert mouse clicks
+    mouse_event = exp.mouse.get_last_button_down_event()
+    if mouse_event is not None:
         try:
-            db_manager.insert_keypress(
+            db_manager.insert_button(
                 trial_id=trial_id,
-                key=key,
+                button=mouse_event,
                 time=time,
                 debug=args.debug or args.all,
             )
         except Exception as e:
-            logging.error(f"Error while logging keypress: {e}")
+            logging.error(f"Error while logging mouse click: {e}")
 
-    # Insert data points
+    # Insert temperature and rating
     if db_rate_limiter.is_allowed(time):
         index = int((time / 1000) * stimulus.sample_rate)
         index = min(index, len(stimulus.y) - 1)  # prevent index out of bounds
-        db_manager.insert_data_point(
+        db_manager.insert_measurement(
             trial_id=trial_id,
             time=time,
             temperature=stimulus.y[index],
@@ -279,7 +279,7 @@ def main():
 
         # Present the VAS slider and wait for the temperature to ramp up
         time_to_ramp_up = thermoino.prep_ctc()
-        db_manager.insert_marker("thermode_ramp_up", trial_id, exp.clock.stopwatch_time)
+        db_manager.insert_marker(trial_id, "thermode_ramp_up", exp.clock.stopwatch_time)
         exp.clock.wait_seconds(
             time_to_ramp_up + 1.5,  # give participant time to prepare
             callback_function=lambda: vas_slider.rate(),  # lamdba needed for callback
@@ -288,14 +288,14 @@ def main():
         # Measure temperature and rating
         thermoino.exec_ctc()
         logging.info("Stimulus started.")
-        db_manager.insert_marker("stimulus_start", trial_id, exp.clock.stopwatch_time)
+        db_manager.insert_marker(trial_id, "stimulus_start", exp.clock.stopwatch_time)
         db_rate_limiter.reset()
         exp.clock.reset_stopwatch()  # needed for the callback
         exp.clock.wait_seconds(
             stimulus.duration,
             callback_function=lambda: callback_function(trial_id, stimulus),
         )
-        db_manager.insert_marker("stimulus_end", trial_id, exp.clock.stopwatch_time)
+        db_manager.insert_marker(trial_id, "stimulus_end", exp.clock.stopwatch_time)
         logging.info("Stimulus ended.")
 
         # Add delay at the end of the complex time course (see thermoino.py)
@@ -307,13 +307,13 @@ def main():
             time_to_ramp_down, callback_function=lambda: vas_slider.rate()
         )
         db_manager.insert_marker(
-            "thermode_ramp_down", trial_id, exp.clock.stopwatch_time
+            trial_id, "thermode_ramp_down", exp.clock.stopwatch_time
         )
         logging.info(
             f"Finished trial ({trial + 1}/{total_trials}) with stimulus {name}."
         )
         db_manager.insert_marker(
-            "thermode_baseline", trial_id, exp.clock.stopwatch_time
+            trial_id, "thermode_baseline", exp.clock.stopwatch_time
         )
 
         # Log data
