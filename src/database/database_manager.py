@@ -245,29 +245,29 @@ class DatabaseManager:
         )
         if debug:
             logger.debug(
-                f"Data point added to the database: {temperature = }, {rating = }, {time = }"
+                f"Measurement added to the database: {temperature = }, {rating = }, {time = }"
             )
 
     def insert_button(
         self,
         trial_id: int,
-        key: str,
+        button: str,
         time: float,
         debug: bool = False,
     ) -> None:
         self.cursor.execute(
             """
-            INSERT INTO Keypresses (trial_id, button, time)
+            INSERT INTO Buttons (trial_id, button, time)
             VALUES (?, ?, ?);
             """,
             (
                 trial_id,
-                key,
+                button,
                 time,
             ),
         )
         if debug:
-            logger.debug(f"Keypress '{key}' added to the database.")
+            logger.debug(f"Button '{button}' added to the database.")
 
     def insert_questionnaire(
         self,

@@ -317,7 +317,7 @@ def main():
         )
 
         # Log data
-        query = f"SELECT * FROM Data_Points WHERE trial_id = {trial_id};"
+        query = f"SELECT * FROM Measurements WHERE trial_id = {trial_id};"
         df = pl.read_database(query, db_manager.conn)
         logging.info(
             f"Rating of the stimulus: "
