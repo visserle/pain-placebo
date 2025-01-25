@@ -27,8 +27,9 @@ from src.log_config import configure_logging
 
 EXP_NAME = "pain-placebo"
 EXP_DIR = Path("src/experiments/placebo")
-LOG_FILE = Path("logs/placebo") / datetime.now().strftime("%Y_%m_%d__%H_%M_%S.log")
-
+LOG_FILE = Path("logs/experiments/placebo") / datetime.now().strftime(
+    "%Y_%m_%d__%H_%M_%S.log"
+)
 
 # Parse arguments
 parser = argparse.ArgumentParser(description="Run the pain-placebo experiment.")

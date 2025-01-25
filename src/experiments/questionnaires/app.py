@@ -28,7 +28,7 @@ QUESTIONNAIRES = [
 ]
 
 INVENTORY_DIR = Path("src/experiments/questionnaires/inventory/")
-LOG_DIR = Path("runs/experiments/questionnaires/")
+LOG_DIR = Path("logs/experiments/questionnaires/")
 
 
 parser = argparse.ArgumentParser(

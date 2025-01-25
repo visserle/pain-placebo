@@ -24,10 +24,11 @@ from src.experiments.utils import (
 )
 from src.log_config import configure_logging
 
-EXP_NAME = "calibration"
+EXP_NAME = "pain-calibration"
 EXP_DIR = Path("src/experiments/calibration")
-LOG_FILE = Path("log/calibration") / datetime.now().strftime("%Y_%m_%d__%H_%M_%S.log")
-
+LOG_FILE = Path("logs/experiments/calibration") / datetime.now().strftime(
+    "%Y_%m_%d__%H_%M_%S.log"
+)
 
 # Parse arguments
 parser = argparse.ArgumentParser(description="Run the pain-calibration experiment.")
@@ -41,7 +42,7 @@ parser.add_argument(
     "-d",
     "--debug",
     action="store_true",
-    help="Enable debug mode with dummy participant data. Results will not be saved.",
+    help="Enable debug mode.",
 )
 parser.add_argument(
     "-w",
@@ -97,9 +98,7 @@ if args.debug or args.windowed:
         "Skip asking for calibration start in debug mode."
     )
 if args.debug:
-    logging.debug(
-        "Enabled debug mode with dummy participant data. Results will not be saved."
-    )
+    logging.debug("Running in debug mode.")
 if args.windowed:
     logging.debug("Running in windowed mode.")
     control.defaults.window_mode = True
