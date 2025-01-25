@@ -277,8 +277,8 @@ class DatabaseManager:
         scale = scale.replace("-", "_")
         self.cursor.execute(
             f"""
-            INSERT INTO Questionnaire_{scale.upper()} (participant_id, {', '.join(results.keys())})
-            VALUES (?, {', '.join('?' for _ in results)});
+            INSERT INTO Questionnaire_{scale.upper()} (participant_id, {", ".join(results.keys())})
+            VALUES (?, {", ".join("?" for _ in results)});
             """,
             (
                 self.last_participant_id,
@@ -326,10 +326,10 @@ class DatabaseManager:
             shutil.copy2(DB_FILE, backup_path)
             logger.debug(f"Database backed up to {backup_path}")
 
-            # Keep only last 5 backups
+            # Keep only last 100 backups
             backups = sorted(BACKUP_DIR.glob("pain-placebo_*.db"))
-            if len(backups) > 5:
-                for backup in backups[:-5]:
+            if len(backups) > 100:
+                for backup in backups[:-100]:
                     backup.unlink()
                     logger.debug(f"Removed old backup: {backup}")
 
